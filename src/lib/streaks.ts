@@ -69,6 +69,53 @@ export function isHabitDueToday({
   return isScheduledOn(parseISODate(today), scheduleWeekdays);
 }
 
+export type RangeCompletionResult = {
+  totalScheduled: number;
+  totalCompleted: number;
+  completionRate: number; // 0-1, 0 when nothing was scheduled in range
+};
+
+/**
+ * Completion rate over a fixed [rangeStart, rangeEnd] window (both
+ * inclusive). Unlike calculateStreaks, this has no "today" leniency — an
+ * unlogged day within the range simply counts as not completed, which is
+ * the right behavior for a historical/analytics summary rather than a
+ * live streak.
+ */
+export function calculateRangeCompletion({
+  logs,
+  scheduleWeekdays,
+  rangeStart,
+  rangeEnd,
+}: {
+  logs: readonly HabitLogEntry[];
+  scheduleWeekdays: readonly number[] | null | undefined;
+  rangeStart: string;
+  rangeEnd: string;
+}): RangeCompletionResult {
+  const completedByDate = new Map(
+    logs.map((log) => [log.logDate, log.completed]),
+  );
+
+  const start = parseISODate(rangeStart);
+  const end = parseISODate(rangeEnd);
+
+  let totalScheduled = 0;
+  let totalCompleted = 0;
+
+  for (let cursor = start; cursor <= end; cursor = addDays(cursor, 1)) {
+    if (!isScheduledOn(cursor, scheduleWeekdays)) continue;
+    totalScheduled += 1;
+    if (completedByDate.get(formatISODate(cursor)) === true) totalCompleted += 1;
+  }
+
+  return {
+    totalScheduled,
+    totalCompleted,
+    completionRate: totalScheduled === 0 ? 0 : totalCompleted / totalScheduled,
+  };
+}
+
 export function calculateStreaks({
   logs,
   scheduleWeekdays,

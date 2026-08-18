@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { calculateStreaks, isHabitDueToday, isScheduledOn } from "./streaks";
+import {
+  calculateRangeCompletion,
+  calculateStreaks,
+  isHabitDueToday,
+  isScheduledOn,
+} from "./streaks";
 
 describe("isScheduledOn", () => {
   it("treats an empty/undefined schedule as every day", () => {
@@ -170,5 +175,46 @@ describe("isHabitDueToday", () => {
     expect(
       isHabitDueToday({ ...base, scheduleWeekdays: [1], today: "2026-08-17" }),
     ).toBe(true);
+  });
+});
+
+describe("calculateRangeCompletion", () => {
+  it("returns all zeros for an empty range with no schedule overlap", () => {
+    const result = calculateRangeCompletion({
+      logs: [],
+      scheduleWeekdays: null,
+      rangeStart: "2026-08-01",
+      rangeEnd: "2026-08-05",
+    });
+    expect(result).toEqual({ totalScheduled: 5, totalCompleted: 0, completionRate: 0 });
+  });
+
+  it("does not apply today-leniency — an unlogged day within range counts as missed", () => {
+    const result = calculateRangeCompletion({
+      logs: [{ logDate: "2026-08-01", completed: true }],
+      scheduleWeekdays: null,
+      rangeStart: "2026-08-01",
+      rangeEnd: "2026-08-02",
+    });
+    expect(result.totalScheduled).toBe(2);
+    expect(result.totalCompleted).toBe(1);
+    expect(result.completionRate).toBeCloseTo(0.5);
+  });
+
+  it("only counts scheduled weekdays within the range", () => {
+    // Mon/Wed/Fri only. 2026-08-17 (Mon) through 2026-08-23 (Sun).
+    const result = calculateRangeCompletion({
+      logs: [
+        { logDate: "2026-08-17", completed: true }, // Mon
+        { logDate: "2026-08-19", completed: true }, // Wed
+        { logDate: "2026-08-21", completed: false }, // Fri, logged but not complete
+      ],
+      scheduleWeekdays: [1, 3, 5],
+      rangeStart: "2026-08-17",
+      rangeEnd: "2026-08-23",
+    });
+    expect(result.totalScheduled).toBe(3);
+    expect(result.totalCompleted).toBe(2);
+    expect(result.completionRate).toBeCloseTo(2 / 3);
   });
 });
