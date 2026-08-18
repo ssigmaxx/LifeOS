@@ -45,6 +45,30 @@ export function isScheduledOn(
   return scheduleWeekdays.includes(date.getUTCDay());
 }
 
+/**
+ * Whether a habit is actually due today — active, within its start/end
+ * date range, and scheduled for today's weekday. A habit that's merely
+ * "not unscheduled today" but paused/archived/not-yet-started is not due.
+ */
+export function isHabitDueToday({
+  isActive,
+  startDate,
+  endDate,
+  scheduleWeekdays,
+  today,
+}: {
+  isActive: boolean;
+  startDate: string;
+  endDate: string | null;
+  scheduleWeekdays: readonly number[] | null | undefined;
+  today: string;
+}): boolean {
+  if (!isActive) return false;
+  if (today < startDate) return false;
+  if (endDate && today > endDate) return false;
+  return isScheduledOn(parseISODate(today), scheduleWeekdays);
+}
+
 export function calculateStreaks({
   logs,
   scheduleWeekdays,

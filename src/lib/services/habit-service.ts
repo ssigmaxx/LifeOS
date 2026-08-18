@@ -289,13 +289,18 @@ export async function clearHabitLogToday(habitId: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function getTodayLogs(): Promise<
-  Record<string, { valueBoolean: boolean | null; valueNumeric: number | null; valueSeconds: number | null }>
-> {
+export type TodayLogValue = {
+  valueBoolean: boolean | null;
+  valueNumeric: number | null;
+  valueSeconds: number | null;
+  targetValueSnapshot: number | null;
+};
+
+export async function getTodayLogs(): Promise<Record<string, TodayLogValue>> {
   const { supabase, userId } = await requireUserId();
   const { data, error } = await supabase
     .from("habit_logs")
-    .select("habit_id, value_boolean, value_numeric, value_seconds")
+    .select("habit_id, value_boolean, value_numeric, value_seconds, target_value_snapshot")
     .eq("user_id", userId)
     .eq("log_date", todayISO());
   if (error) throw error;
@@ -307,6 +312,7 @@ export async function getTodayLogs(): Promise<
         valueBoolean: row.value_boolean,
         valueNumeric: row.value_numeric,
         valueSeconds: row.value_seconds,
+        targetValueSnapshot: row.target_value_snapshot,
       },
     ]),
   );

@@ -11,12 +11,10 @@ export const trackingTypeSchema = z.enum([
 export const frequencySchema = z.enum(["daily", "custom"]);
 
 const optionalText = (max: number) =>
-  z
-    .string()
-    .max(max)
-    .optional()
-    .or(z.literal(""))
-    .transform((v) => (v ? v : undefined));
+  z.preprocess(
+    (val) => (val === "" || val == null ? undefined : val),
+    z.string().max(max).optional(),
+  );
 
 export const habitFormSchema = z
   .object({
@@ -26,7 +24,10 @@ export const habitFormSchema = z
     icon: optionalText(50),
     trackingType: trackingTypeSchema,
     unit: optionalText(20),
-    targetValue: z.coerce.number().positive().optional().or(z.nan().transform(() => undefined)),
+    targetValue: z.preprocess(
+      (val) => (val === "" || val == null ? undefined : val),
+      z.coerce.number().positive().optional(),
+    ),
     scoreWeight: z.coerce.number().min(0).default(1),
     startDate: z.string().min(1, "Start date is required."),
     frequency: frequencySchema,

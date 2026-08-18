@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateStreaks, isScheduledOn } from "./streaks";
+import { calculateStreaks, isHabitDueToday, isScheduledOn } from "./streaks";
 
 describe("isScheduledOn", () => {
   it("treats an empty/undefined schedule as every day", () => {
@@ -131,5 +131,44 @@ describe("calculateStreaks", () => {
     expect(result.totalScheduled).toBe(3);
     expect(result.totalCompleted).toBe(2);
     expect(result.completionRate).toBeCloseTo(2 / 3);
+  });
+});
+
+describe("isHabitDueToday", () => {
+  const base = {
+    isActive: true,
+    startDate: "2026-08-01",
+    endDate: null as string | null,
+    scheduleWeekdays: null as number[] | null,
+  };
+
+  it("is due today for an active daily habit within range", () => {
+    expect(isHabitDueToday({ ...base, today: "2026-08-17" })).toBe(true);
+  });
+
+  it("is not due when paused", () => {
+    expect(isHabitDueToday({ ...base, isActive: false, today: "2026-08-17" })).toBe(false);
+  });
+
+  it("is not due before the start date", () => {
+    expect(isHabitDueToday({ ...base, startDate: "2026-08-20", today: "2026-08-17" })).toBe(
+      false,
+    );
+  });
+
+  it("is not due after the end date", () => {
+    expect(
+      isHabitDueToday({ ...base, endDate: "2026-08-10", today: "2026-08-17" }),
+    ).toBe(false);
+  });
+
+  it("respects the weekday schedule", () => {
+    // 2026-08-17 is a Monday.
+    expect(
+      isHabitDueToday({ ...base, scheduleWeekdays: [2, 4], today: "2026-08-17" }),
+    ).toBe(false);
+    expect(
+      isHabitDueToday({ ...base, scheduleWeekdays: [1], today: "2026-08-17" }),
+    ).toBe(true);
   });
 });

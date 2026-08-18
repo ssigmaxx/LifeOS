@@ -49,6 +49,7 @@ export async function createHabitAction(
   }
 
   revalidatePath("/habits");
+  revalidatePath("/today");
   return { error: null };
 }
 
@@ -69,6 +70,7 @@ export async function updateHabitAction(
   }
 
   revalidatePath("/habits");
+  revalidatePath("/today");
   return { error: null };
 }
 
@@ -94,21 +96,25 @@ export async function createCategoryAction(
 export async function pauseHabitAction(habitId: string) {
   await setHabitActive(habitId, false);
   revalidatePath("/habits");
+  revalidatePath("/today");
 }
 
 export async function resumeHabitAction(habitId: string) {
   await setHabitActive(habitId, true);
   revalidatePath("/habits");
+  revalidatePath("/today");
 }
 
 export async function archiveHabitAction(habitId: string) {
   await archiveHabit(habitId);
   revalidatePath("/habits");
+  revalidatePath("/today");
 }
 
 export async function deleteHabitAction(habitId: string) {
   await deleteHabit(habitId);
   revalidatePath("/habits");
+  revalidatePath("/today");
 }
 
 export async function logHabitTodayAction(
@@ -117,9 +123,11 @@ export async function logHabitTodayAction(
 ) {
   await logHabitToday(habitId, value);
   revalidatePath("/habits");
+  revalidatePath("/today");
 }
 
 export async function clearHabitLogTodayAction(habitId: string) {
   await clearHabitLogToday(habitId);
   revalidatePath("/habits");
+  revalidatePath("/today");
 }
