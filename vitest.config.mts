@@ -12,5 +12,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // Excludes .claude/worktrees/** too — background-task worktrees live
+    // inside the repo and would otherwise get double-counted.
+    exclude: ["**/node_modules/**", "**/.claude/**"],
   },
 });
