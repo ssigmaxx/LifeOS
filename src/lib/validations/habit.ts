@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalText } from "./shared";
 
 export const trackingTypeSchema = z.enum([
   "boolean",
@@ -9,12 +10,6 @@ export const trackingTypeSchema = z.enum([
 ]);
 
 export const frequencySchema = z.enum(["daily", "custom"]);
-
-const optionalText = (max: number) =>
-  z.preprocess(
-    (val) => (val === "" || val == null ? undefined : val),
-    z.string().max(max).optional(),
-  );
 
 export const habitFormSchema = z
   .object({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
+import { useActionState, useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -55,16 +55,16 @@ export function HabitFormDialog({
   );
   const [weekdays, setWeekdays] = useState<number[]>(habit?.scheduleWeekdays ?? []);
 
-  // Close the dialog once a submission succeeds. Adjusting state during
-  // render (rather than in an effect) avoids an extra render pass — see
-  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
-  const [prevState, setPrevState] = useState(state);
-  if (state !== prevState) {
-    setPrevState(state);
+  // Close the dialog once a submission succeeds. `setOpen` may be a parent's
+  // setter (controlled usage from HabitCard's edit menu), so this has to
+  // run as an effect — updating another component's state during render
+  // throws "Cannot update a component while rendering a different component".
+  useEffect(() => {
     if (state !== initialState && !state.error) {
       setOpen(false);
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   function toggleWeekday(day: number) {
     setWeekdays((prev) =>
