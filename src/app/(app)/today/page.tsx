@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Images, ListChecks } from "lucide-react";
+import { ListChecks } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -10,14 +10,15 @@ import { getCurrentFast, getLastCompletedFast } from "@/lib/services/fasting-ser
 import { getTodayMeditation } from "@/lib/services/meditation-service";
 import { getTodayWorkout } from "@/lib/services/workout-service";
 import { getTodayEntries } from "@/lib/services/journal-service";
+import { getTodayPhotos } from "@/lib/services/photo-service";
 import { TodayHabitRow } from "./today-habit-row";
-import { PlaceholderSection } from "./placeholder-section";
 import { WaterCard } from "./water-card";
 import { SleepCard } from "./sleep-card";
 import { FastingCard } from "./fasting-card";
 import { MeditationCard } from "./meditation-card";
 import { WorkoutCard } from "./workout-card";
 import { JournalCard } from "./journal-card";
+import { PhotosCard } from "./photos-card";
 
 function greeting(hour: number) {
   if (hour < 5) return "Good night";
@@ -27,7 +28,7 @@ function greeting(hour: number) {
 }
 
 export default async function TodayPage() {
-  const [summary, water, latestSleep, currentFast, lastFast, meditation, workout, journal] =
+  const [summary, water, latestSleep, currentFast, lastFast, meditation, workout, journal, photos] =
     await Promise.all([
       getTodaySummary(),
       getTodayWater(),
@@ -37,6 +38,7 @@ export default async function TodayPage() {
       getTodayMeditation(),
       getTodayWorkout(),
       getTodayEntries(),
+      getTodayPhotos(),
     ]);
 
   const today = new Date();
@@ -119,13 +121,7 @@ export default async function TodayPage() {
           <MeditationCard meditation={meditation} />
           <WorkoutCard workout={workout} />
           <JournalCard morning={journal.morning} evening={journal.evening} />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">Coming soon</h2>
-        <div className="space-y-2">
-          <PlaceholderSection icon={Images} title="Photos" hint="Not tracked yet." />
+          <PhotosCard face={photos.face} body={photos.body} />
         </div>
       </div>
     </div>
