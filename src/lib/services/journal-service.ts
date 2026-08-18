@@ -120,6 +120,8 @@ export async function deleteJournalEntry(id: string): Promise<void> {
 export async function listJournalEntries(options: {
   search?: string;
   limit?: number;
+  startDate?: string;
+  endDate?: string;
 }): Promise<JournalEntry[]> {
   const { supabase, userId } = await requireUserId();
   let query = supabase
@@ -135,6 +137,8 @@ export async function listJournalEntries(options: {
     // V1 volumes; a tsvector index is the natural upgrade if needed later.
     query = query.ilike("text", `%${options.search}%`);
   }
+  if (options.startDate) query = query.gte("entry_date", options.startDate);
+  if (options.endDate) query = query.lte("entry_date", options.endDate);
 
   const { data, error } = await query;
   if (error) throw error;

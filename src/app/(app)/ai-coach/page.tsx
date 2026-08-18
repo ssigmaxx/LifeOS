@@ -1,12 +1,9 @@
-import { Sparkles } from "lucide-react";
-import { ComingSoon } from "@/components/coming-soon";
+import { getLatestConversationId, listMessages } from "@/lib/services/ai-service";
+import { ChatView } from "./chat-view";
 
-export default function AiCoachPage() {
-  return (
-    <ComingSoon
-      icon={Sparkles}
-      title="AI Coach"
-      description="Ask Gemini about your real tracked data — no invented statistics, ever."
-    />
-  );
+export default async function AiCoachPage() {
+  const conversationId = await getLatestConversationId();
+  const messages = conversationId ? await listMessages(conversationId) : [];
+
+  return <ChatView initialConversationId={conversationId} initialMessages={messages} />;
 }
