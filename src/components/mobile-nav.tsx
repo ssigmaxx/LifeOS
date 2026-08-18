@@ -13,8 +13,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { NavUser } from "@/components/nav-user";
 
-export function MobileNav() {
+export function MobileNav({ userEmail }: { userEmail: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const moreActive = moreNav.some((item) => pathname.startsWith(item.href));
@@ -72,6 +73,9 @@ export function MobileNav() {
                 {item.label}
               </Link>
             ))}
+          </div>
+          <div className="border-t px-4 pt-4">
+            <NavUser email={userEmail} />
           </div>
         </SheetContent>
       </Sheet>

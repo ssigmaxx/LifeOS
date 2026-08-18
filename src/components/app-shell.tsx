@@ -4,10 +4,16 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  userEmail,
+}: {
+  children: ReactNode;
+  userEmail: string;
+}) {
   return (
     <div className="flex min-h-svh w-full">
-      <AppSidebar />
+      <AppSidebar userEmail={userEmail} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center justify-between border-b px-4 md:hidden">
           <div className="flex items-center gap-2">
@@ -22,7 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </main>
       </div>
-      <MobileNav />
+      <MobileNav userEmail={userEmail} />
     </div>
   );
 }

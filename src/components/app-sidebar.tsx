@@ -6,8 +6,9 @@ import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { primaryNav } from "@/lib/nav";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NavUser } from "@/components/nav-user";
 
-export function AppSidebar() {
+export function AppSidebar({ userEmail }: { userEmail: string }) {
   const pathname = usePathname();
 
   return (
@@ -37,9 +38,12 @@ export function AppSidebar() {
           );
         })}
       </nav>
-      <div className="flex items-center justify-between border-t px-4 py-3">
-        <span className="text-xs text-sidebar-foreground/60">Theme</span>
-        <ThemeToggle />
+      <div className="space-y-2 border-t px-3 py-3">
+        <NavUser email={userEmail} />
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs text-sidebar-foreground/60">Theme</span>
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   );
