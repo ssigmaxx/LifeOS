@@ -1,11 +1,21 @@
 import Link from "next/link";
-import { Droplets, Moon, Timer, Wind, BookOpen, Images, ListChecks } from "lucide-react";
+import { BookOpen, Images, ListChecks } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { getTodaySummary } from "@/lib/services/today-service";
+import { getTodayWater } from "@/lib/services/water-service";
+import { getLatestSleep } from "@/lib/services/sleep-service";
+import { getCurrentFast, getLastCompletedFast } from "@/lib/services/fasting-service";
+import { getTodayMeditation } from "@/lib/services/meditation-service";
+import { getTodayWorkout } from "@/lib/services/workout-service";
 import { TodayHabitRow } from "./today-habit-row";
 import { PlaceholderSection } from "./placeholder-section";
+import { WaterCard } from "./water-card";
+import { SleepCard } from "./sleep-card";
+import { FastingCard } from "./fasting-card";
+import { MeditationCard } from "./meditation-card";
+import { WorkoutCard } from "./workout-card";
 
 function greeting(hour: number) {
   if (hour < 5) return "Good night";
@@ -15,7 +25,17 @@ function greeting(hour: number) {
 }
 
 export default async function TodayPage() {
-  const summary = await getTodaySummary();
+  const [summary, water, latestSleep, currentFast, lastFast, meditation, workout] =
+    await Promise.all([
+      getTodaySummary(),
+      getTodayWater(),
+      getLatestSleep(),
+      getCurrentFast(),
+      getLastCompletedFast(),
+      getTodayMeditation(),
+      getTodayWorkout(),
+    ]);
+
   const today = new Date();
   const dateLabel = today.toLocaleDateString("en-US", {
     weekday: "long",
@@ -88,12 +108,19 @@ export default async function TodayPage() {
       </div>
 
       <div className="space-y-2">
+        <h2 className="text-sm font-medium text-muted-foreground">Lifestyle</h2>
+        <div className="space-y-2">
+          <WaterCard water={water} />
+          <SleepCard latest={latestSleep} />
+          <FastingCard current={currentFast} lastCompleted={lastFast} />
+          <MeditationCard meditation={meditation} />
+          <WorkoutCard workout={workout} />
+        </div>
+      </div>
+
+      <div className="space-y-2">
         <h2 className="text-sm font-medium text-muted-foreground">Coming soon</h2>
         <div className="space-y-2">
-          <PlaceholderSection icon={Droplets} title="Water" hint="Not tracked yet." />
-          <PlaceholderSection icon={Moon} title="Sleep" hint="Not tracked yet." />
-          <PlaceholderSection icon={Timer} title="Fasting" hint="Not tracked yet." />
-          <PlaceholderSection icon={Wind} title="Meditation" hint="Not tracked yet." />
           <PlaceholderSection icon={BookOpen} title="Journal" hint="Not tracked yet." />
           <PlaceholderSection icon={Images} title="Photos" hint="Not tracked yet." />
         </div>
