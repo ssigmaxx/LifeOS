@@ -13,7 +13,8 @@ export default defineConfig({
   test: {
     environment: "node",
     // Excludes .claude/worktrees/** too — background-task worktrees live
-    // inside the repo and would otherwise get double-counted.
-    exclude: ["**/node_modules/**", "**/.claude/**"],
+    // inside the repo and would otherwise get double-counted. e2e/** is
+    // Playwright's directory (*.spec.ts), not vitest's.
+    exclude: ["**/node_modules/**", "**/.claude/**", "**/e2e/**"],
   },
 });

@@ -25,3 +25,9 @@ next-env.d.ts
 
 # vercel
 .vercel
+
+# playwright — test-results/report are regenerated; e2e/.auth holds a live
+# session cookie for a disposable test account and must never be committed.
+/test-results/
+/playwright-report/
+/e2e/.auth/
