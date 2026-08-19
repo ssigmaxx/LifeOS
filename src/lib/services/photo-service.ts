@@ -3,11 +3,42 @@ import sharp from "sharp";
 import { createClient } from "@/lib/supabase/server";
 
 const BUCKET = "progress-photos";
-const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB — upload input limit
+const MAX_OUTPUT_BYTES = 1024 * 1024; // 1MB — stored output limit
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const THUMBNAIL_MAX_DIMENSION = 400;
 const ORIGINAL_MAX_DIMENSION = 2000;
 const SIGNED_URL_TTL_SECONDS = 3600;
+
+// A 2000px photo straight off a modern phone camera can easily land well
+// over 1MB at a fixed quality setting — quality 85 alone isn't a
+// guarantee. Steps quality down first (it costs less visible detail than
+// shrinking dimensions does for a progress photo), then falls back to
+// shrinking dimensions once quality bottoms out, until the result is
+// under budget or both floors are hit.
+async function compressUnderLimit(buffer: Buffer, startDimension: number, maxBytes: number): Promise<Buffer> {
+  let dimension = startDimension;
+  let quality = 85;
+  let output: Buffer;
+
+  for (;;) {
+    output = await sharp(buffer)
+      .rotate()
+      .resize({ width: dimension, height: dimension, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality })
+      .toBuffer();
+
+    if (output.length <= maxBytes) return output;
+
+    if (quality > 40) {
+      quality -= 10;
+    } else if (dimension > 800) {
+      dimension = Math.round(dimension * 0.85);
+    } else {
+      return output; // both floors hit — best effort, accept as-is
+    }
+  }
+}
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -58,18 +89,11 @@ export async function uploadPhoto(input: {
 
   // Re-encoding (rather than storing the upload as-is) normalizes the
   // format, bounds dimensions, and strips EXIF metadata — including GPS
-  // location — which matters for photos this private.
+  // location — which matters for photos this private. The original also
+  // gets compressed under MAX_OUTPUT_BYTES; the thumbnail is already far
+  // below that at 400px/quality 75 so it doesn't need the same treatment.
   const [original, thumbnail] = await Promise.all([
-    sharp(buffer)
-      .rotate()
-      .resize({
-        width: ORIGINAL_MAX_DIMENSION,
-        height: ORIGINAL_MAX_DIMENSION,
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .jpeg({ quality: 85 })
-      .toBuffer(),
+    compressUnderLimit(buffer, ORIGINAL_MAX_DIMENSION, MAX_OUTPUT_BYTES),
     sharp(buffer)
       .rotate()
       .resize({

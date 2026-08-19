@@ -38,6 +38,17 @@ const csp = [
   .replace(/\s+/g, " ");
 
 const nextConfig: NextConfig = {
+  // Next's Server Action body limit defaults to 1MB — photo uploads go
+  // through one (see photo-slot.tsx's form action) and photo-service.ts
+  // already validates/rejects raw uploads over 10MB itself, so this just
+  // needs enough headroom above that for multipart encoding overhead.
+  // Below this, every real phone photo (typically several MB) would be
+  // rejected by Next before photo-service.ts ever saw it.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "12mb",
+    },
+  },
   async headers() {
     return [
       {
