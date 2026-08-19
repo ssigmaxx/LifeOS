@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import type { FoodLogEntry, MealType } from "@/lib/services/nutrition-service";
 import { deleteMealLogAction } from "./actions";
 
-const MEAL_ORDER: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
+const COLUMN_MEALS: MealType[] = ["breakfast", "lunch", "dinner"];
+
 const MEAL_LABELS: Record<MealType, string> = {
   breakfast: "Breakfast",
   lunch: "Lunch",
@@ -14,11 +15,30 @@ const MEAL_LABELS: Record<MealType, string> = {
   snack: "Snack",
 };
 
+const MEAL_STYLES: Record<MealType, { section: string; header: string }> = {
+  breakfast: {
+    section: "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40",
+    header: "text-amber-800 dark:text-amber-400",
+  },
+  lunch: {
+    section: "border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/40",
+    header: "text-sky-800 dark:text-sky-400",
+  },
+  dinner: {
+    section: "border-violet-200 bg-violet-50 dark:border-violet-900 dark:bg-violet-950/40",
+    header: "text-violet-800 dark:text-violet-400",
+  },
+  snack: {
+    section: "border-border bg-muted/40",
+    header: "text-muted-foreground",
+  },
+};
+
 function EntryRow({ entry }: { entry: FoodLogEntry }) {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div className="flex items-center justify-between gap-2 py-1.5">
+    <div className="flex items-center justify-between gap-2 rounded-md bg-background/60 px-2 py-1.5">
       <div className="min-w-0">
         <p className="truncate text-sm">
           {entry.foodName} <span className="text-muted-foreground">· {entry.quantityGrams}g</span>
@@ -46,6 +66,29 @@ function EntryRow({ entry }: { entry: FoodLogEntry }) {
   );
 }
 
+function MealColumn({ meal, entries }: { meal: MealType; entries: FoodLogEntry[] }) {
+  const calories = entries.reduce((sum, e) => sum + e.calories, 0);
+  const styles = MEAL_STYLES[meal];
+
+  return (
+    <div className={`flex flex-col gap-2 rounded-lg border p-3 ${styles.section}`}>
+      <div className={`flex items-baseline justify-between text-sm font-medium ${styles.header}`}>
+        <span>{MEAL_LABELS[meal]}</span>
+        <span>{calories} kcal</span>
+      </div>
+      {entries.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Nothing logged yet.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {entries.map((entry) => (
+            <EntryRow key={entry.id} entry={entry} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MealList({ entries }: { entries: FoodLogEntry[] }) {
   if (entries.length === 0) {
     return <p className="text-sm text-muted-foreground">Nothing logged today yet.</p>;
@@ -58,18 +101,16 @@ export function MealList({ entries }: { entries: FoodLogEntry[] }) {
     byMeal.set(entry.mealType, list);
   }
 
+  const snacks = byMeal.get("snack") ?? [];
+
   return (
     <div className="space-y-3">
-      {MEAL_ORDER.filter((meal) => byMeal.has(meal)).map((meal) => (
-        <div key={meal}>
-          <p className="text-xs font-medium text-muted-foreground">{MEAL_LABELS[meal]}</p>
-          <div className="divide-y">
-            {byMeal.get(meal)!.map((entry) => (
-              <EntryRow key={entry.id} entry={entry} />
-            ))}
-          </div>
-        </div>
-      ))}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {COLUMN_MEALS.map((meal) => (
+          <MealColumn key={meal} meal={meal} entries={byMeal.get(meal) ?? []} />
+        ))}
+      </div>
+      {snacks.length > 0 ? <MealColumn meal="snack" entries={snacks} /> : null}
     </div>
   );
 }

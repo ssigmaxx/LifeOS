@@ -218,3 +218,89 @@ export async function getDailyTotals(date?: string): Promise<DailyTotals> {
   const entries = await getDailyLog(date);
   return sumNutrition(entries);
 }
+
+export type SavedFood = {
+  id: string;
+  foodName: string;
+  source: FoodSource;
+  caloriesPer100g: number;
+  proteinPer100g: number;
+  carbsPer100g: number;
+  fatPer100g: number;
+  defaultQuantityGrams: number;
+  defaultMealType: MealType;
+};
+
+function mapSavedFoodRow(row: {
+  id: string;
+  food_name: string;
+  source: string;
+  calories_per_100g: number;
+  protein_per_100g: number;
+  carbs_per_100g: number;
+  fat_per_100g: number;
+  default_quantity_grams: number;
+  default_meal_type: string;
+}): SavedFood {
+  return {
+    id: row.id,
+    foodName: row.food_name,
+    source: row.source as FoodSource,
+    caloriesPer100g: row.calories_per_100g,
+    proteinPer100g: row.protein_per_100g,
+    carbsPer100g: row.carbs_per_100g,
+    fatPer100g: row.fat_per_100g,
+    defaultQuantityGrams: row.default_quantity_grams,
+    defaultMealType: row.default_meal_type as MealType,
+  };
+}
+
+export async function getSavedFoods(): Promise<SavedFood[]> {
+  const { supabase, userId } = await requireUserId();
+  const { data, error } = await supabase
+    .from("saved_foods")
+    .select(
+      "id, food_name, source, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, default_quantity_grams, default_meal_type",
+    )
+    .eq("user_id", userId)
+    .order("food_name", { ascending: true });
+  if (error) throw error;
+  return data.map(mapSavedFoodRow);
+}
+
+// Upserted on (user_id, food_name) — saving the same food again just
+// refreshes its macros and defaults instead of piling up duplicates.
+export async function saveFood(input: {
+  foodName: string;
+  source: FoodSource;
+  caloriesPer100g: number;
+  proteinPer100g: number;
+  carbsPer100g: number;
+  fatPer100g: number;
+  defaultQuantityGrams: number;
+  defaultMealType: MealType;
+}): Promise<void> {
+  const { supabase, userId } = await requireUserId();
+  const { error } = await supabase.from("saved_foods").upsert(
+    {
+      user_id: userId,
+      food_name: input.foodName,
+      source: input.source,
+      calories_per_100g: input.caloriesPer100g,
+      protein_per_100g: input.proteinPer100g,
+      carbs_per_100g: input.carbsPer100g,
+      fat_per_100g: input.fatPer100g,
+      default_quantity_grams: input.defaultQuantityGrams,
+      default_meal_type: input.defaultMealType,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,food_name" },
+  );
+  if (error) throw error;
+}
+
+export async function deleteSavedFood(id: string): Promise<void> {
+  const { supabase } = await requireUserId();
+  const { error } = await supabase.from("saved_foods").delete().eq("id", id);
+  if (error) throw error;
+}

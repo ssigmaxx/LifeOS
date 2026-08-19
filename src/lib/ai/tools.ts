@@ -190,14 +190,14 @@ export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   {
     name: "search_food",
     description:
-      "Search Open Food Facts (Germany) for a branded or packaged food by name. Returns per-100g calories/protein/carbs/fat for up to 5 matches. Use this first for anything packaged; if nothing reasonable comes back, fall back to your own best estimate for the closest German food equivalent and pass source='estimate' to propose_log_meal. If the user hasn't said where they bought it, ask which store (e.g. REWE, Netto, Kaufland, Edeka, Aldi, Lidl, Penny) before searching — store-specific results tend to match what's actually on their receipt. Store tagging is sparse, so if a store filter returns nothing this falls back to unfiltered results automatically; say so if that happens.",
+      "Search Open Food Facts (Germany) for a branded or packaged food by name. Returns per-100g calories/protein/carbs/fat for up to 5 matches. Use this first for anything packaged; if nothing reasonable comes back, fall back to your own best estimate for the closest German food equivalent and pass source='estimate' to propose_log_meal. If the user hasn't said where they bought it, ask which store (e.g. REWE, Netto, Kaufland, Edeka, Aldi, Lidl, Penny, Rossmann, dm, denn's Biomarkt) before searching — store-specific results tend to match what's actually on their receipt. Store tagging is sparse, so if a store filter returns nothing this falls back to unfiltered results automatically; say so if that happens.",
     parametersJsonSchema: {
       type: "object",
       properties: {
         query: { type: "string" },
         store: {
           type: "string",
-          description: "Optional — one of REWE, Netto, Kaufland, Edeka, Aldi, Lidl, Penny. Omit if unknown.",
+          description: "Optional — one of REWE, Netto, Kaufland, Edeka, Aldi, Lidl, Penny, Rossmann, dm, denn's Biomarkt. Omit if unknown.",
         },
       },
       required: ["query"],

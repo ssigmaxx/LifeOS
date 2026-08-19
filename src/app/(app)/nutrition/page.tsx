@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { getDailyLog, getNutritionProfile, sumNutrition } from "@/lib/services/nutrition-service";
+import { getDailyLog, getNutritionProfile, getSavedFoods, sumNutrition } from "@/lib/services/nutrition-service";
 import { FoodLogPanel } from "./food-log-panel";
 import { MealList } from "./meal-list";
 import { NutritionProfileForm } from "./nutrition-profile-form";
@@ -21,7 +21,7 @@ function macroPct(consumed: number, target: number) {
 }
 
 export default async function NutritionPage() {
-  const [profile, entries] = await Promise.all([getNutritionProfile(), getDailyLog()]);
+  const [profile, entries, savedFoods] = await Promise.all([getNutritionProfile(), getDailyLog(), getSavedFoods()]);
   const totals = sumNutrition(entries);
 
   return (
@@ -110,7 +110,7 @@ export default async function NutritionPage() {
           <CardTitle>Log food</CardTitle>
         </CardHeader>
         <CardContent>
-          <FoodLogPanel />
+          <FoodLogPanel savedFoods={savedFoods} />
         </CardContent>
       </Card>
 

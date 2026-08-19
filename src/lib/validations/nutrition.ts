@@ -58,3 +58,16 @@ export const mealLogConfirmSchema = z.object({
 });
 
 export type MealLogConfirmInput = z.infer<typeof mealLogConfirmSchema>;
+
+export const savedFoodInputSchema = z.object({
+  foodName: z.string().min(1, "Food name is required.").max(200),
+  source: foodSourceSchema,
+  caloriesPer100g: z.coerce.number().min(0).max(950),
+  proteinPer100g: z.coerce.number().min(0).max(100),
+  carbsPer100g: z.coerce.number().min(0).max(100),
+  fatPer100g: z.coerce.number().min(0).max(100),
+  defaultQuantityGrams: z.coerce.number().positive("Quantity must be greater than 0.").max(5000),
+  defaultMealType: mealTypeSchema,
+});
+
+export type SavedFoodInput = z.infer<typeof savedFoodInputSchema>;

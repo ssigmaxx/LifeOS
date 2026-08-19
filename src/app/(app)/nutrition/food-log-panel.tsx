@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Search, TriangleAlert } from "lucide-react";
+import { Plus, Search, Star, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import type { MealType } from "@/lib/services/nutrition-service";
+import type { MealType, SavedFood } from "@/lib/services/nutrition-service";
 import type { OpenFoodFactsResult } from "@/lib/nutrition/open-food-facts";
 import { GERMAN_STORES } from "@/lib/nutrition/stores";
-import { logFoodAction, searchFoodAction } from "./actions";
+import { deleteSavedFoodAction, logFoodAction, saveFoodAction, searchFoodAction } from "./actions";
 
 const MEAL_OPTIONS: { value: MealType; label: string }[] = [
   { value: "breakfast", label: "Breakfast" },
@@ -37,6 +38,7 @@ function AddRow({
   const [expanded, setExpanded] = useState(false);
   const [quantity, setQuantity] = useState("100");
   const [mealType, setMealType] = useState<MealType>("snack");
+  const [remember, setRemember] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function confirm() {
@@ -55,10 +57,19 @@ function AddRow({
       });
       if (result.error) {
         onError(result.error);
-      } else {
-        setExpanded(false);
-        onLogged();
+        return;
       }
+      if (remember) {
+        await saveFoodAction({
+          foodName: name,
+          source,
+          defaultQuantityGrams: quantityGrams,
+          defaultMealType: mealType,
+          ...per100g,
+        });
+      }
+      setExpanded(false);
+      onLogged();
     });
   }
 
@@ -106,6 +117,10 @@ function AddRow({
           <Button type="button" size="sm" disabled={isPending} onClick={confirm}>
             {isPending ? "Logging…" : "Confirm"}
           </Button>
+          <label className="flex items-center gap-1.5 pb-1.5 text-xs text-muted-foreground">
+            <Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
+            Remember for quick re-logging
+          </label>
         </div>
       ) : null}
     </div>
@@ -121,6 +136,7 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
   const [fat, setFat] = useState("");
   const [quantity, setQuantity] = useState("100");
   const [mealType, setMealType] = useState<MealType>("snack");
+  const [remember, setRemember] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   if (!open) {
@@ -136,29 +152,43 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
     if (!name.trim()) return onError("Enter a food name.");
     if (!quantityGrams || quantityGrams <= 0) return onError("Enter a portion size greater than 0.");
 
+    const per100g = {
+      caloriesPer100g: Number(calories) || 0,
+      proteinPer100g: Number(protein) || 0,
+      carbsPer100g: Number(carbs) || 0,
+      fatPer100g: Number(fat) || 0,
+    };
+
     startTransition(async () => {
       const result = await logFoodAction({
         mealType,
         foodName: name.trim(),
         source: "estimate",
         quantityGrams,
-        caloriesPer100g: Number(calories) || 0,
-        proteinPer100g: Number(protein) || 0,
-        carbsPer100g: Number(carbs) || 0,
-        fatPer100g: Number(fat) || 0,
+        ...per100g,
       });
       if (result.error) {
         onError(result.error);
-      } else {
-        onLogged(name.trim());
-        setOpen(false);
-        setName("");
-        setCalories("");
-        setProtein("");
-        setCarbs("");
-        setFat("");
-        setQuantity("100");
+        return;
       }
+      if (remember) {
+        await saveFoodAction({
+          foodName: name.trim(),
+          source: "estimate",
+          defaultQuantityGrams: quantityGrams,
+          defaultMealType: mealType,
+          ...per100g,
+        });
+      }
+      onLogged(name.trim());
+      setOpen(false);
+      setName("");
+      setCalories("");
+      setProtein("");
+      setCarbs("");
+      setFat("");
+      setQuantity("100");
+      setRemember(false);
     });
   }
 
@@ -216,13 +246,127 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
           <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
             Cancel
           </Button>
+          <label className="flex items-center gap-1.5 pb-1.5 text-xs text-muted-foreground">
+            <Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
+            Remember for quick re-logging
+          </label>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-export function FoodLogPanel() {
+function SavedFoodRow({
+  food,
+  onLogged,
+  onError,
+}: {
+  food: SavedFood;
+  onLogged: () => void;
+  onError: (message: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [quantity, setQuantity] = useState(String(food.defaultQuantityGrams));
+  const [mealType, setMealType] = useState<MealType>(food.defaultMealType);
+  const [isPending, startTransition] = useTransition();
+  const [isDeleting, startDelete] = useTransition();
+
+  function logWith(quantityGrams: number, meal: MealType) {
+    if (!quantityGrams || quantityGrams <= 0) {
+      onError("Enter a portion size greater than 0.");
+      return;
+    }
+    startTransition(async () => {
+      const result = await logFoodAction({
+        mealType: meal,
+        foodName: food.foodName,
+        source: food.source,
+        quantityGrams,
+        caloriesPer100g: food.caloriesPer100g,
+        proteinPer100g: food.proteinPer100g,
+        carbsPer100g: food.carbsPer100g,
+        fatPer100g: food.fatPer100g,
+      });
+      if (result.error) {
+        onError(result.error);
+      } else {
+        setExpanded(false);
+        onLogged();
+      }
+    });
+  }
+
+  return (
+    <div className="rounded-lg border p-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{food.foodName}</p>
+          <p className="text-xs text-muted-foreground">
+            {Math.round(food.caloriesPer100g)} kcal / 100g · usually {food.defaultQuantityGrams}g ·{" "}
+            {MEAL_OPTIONS.find((m) => m.value === food.defaultMealType)?.label}
+          </p>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            size="sm"
+            disabled={isPending}
+            onClick={() => logWith(food.defaultQuantityGrams, food.defaultMealType)}
+          >
+            <Plus className="size-4" /> {isPending ? "Logging…" : "Add"}
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => setExpanded((v) => !v)}>
+            Edit
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            aria-label={`Forget ${food.foodName}`}
+            disabled={isDeleting}
+            onClick={() => startDelete(() => deleteSavedFoodAction(food.id))}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
+      </div>
+      {expanded ? (
+        <div className="mt-2.5 flex flex-wrap items-end gap-2 border-t pt-2.5">
+          <div className="space-y-1">
+            <Label className="text-xs">Grams</Label>
+            <Input
+              type="number"
+              min={1}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              className="h-8 w-24"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Meal</Label>
+            <Select value={mealType} onValueChange={(v) => setMealType(v as MealType)}>
+              <SelectTrigger className="h-8 w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MEAL_OPTIONS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="button" size="sm" disabled={isPending} onClick={() => logWith(Number(quantity), mealType)}>
+            {isPending ? "Logging…" : "Confirm"}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function FoodLogPanel({ savedFoods }: { savedFoods: SavedFood[] }) {
   const [query, setQuery] = useState("");
   const [store, setStore] = useState<string>("any");
   const [results, setResults] = useState<OpenFoodFactsResult[]>([]);
@@ -249,6 +393,24 @@ export function FoodLogPanel() {
 
   return (
     <div className="space-y-3">
+      {savedFoods.length > 0 ? (
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1 text-xs">
+            <Star className="size-3.5" /> Saved foods
+          </Label>
+          <div className="space-y-2">
+            {savedFoods.map((food) => (
+              <SavedFoodRow
+                key={food.id}
+                food={food}
+                onLogged={() => setNotice(`Logged "${food.foodName}".`)}
+                onError={setError}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="space-y-1.5">
         <Label className="text-xs">Where did you buy this?</Label>
         <Select value={store} onValueChange={(v) => setStore(v ?? "any")}>

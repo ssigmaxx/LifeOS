@@ -1,9 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { mealLogInputSchema, nutritionProfileInputSchema } from "@/lib/validations/nutrition";
+import { mealLogInputSchema, nutritionProfileInputSchema, savedFoodInputSchema } from "@/lib/validations/nutrition";
 import { buildNutritionPlan, scaleNutrition, type NutritionPlan } from "@/lib/nutrition-calc";
-import { deleteMealLog, logMeal, upsertNutritionProfile } from "@/lib/services/nutrition-service";
+import {
+  deleteMealLog,
+  deleteSavedFood,
+  logMeal,
+  saveFood,
+  upsertNutritionProfile,
+} from "@/lib/services/nutrition-service";
 import { searchOpenFoodFacts, type FoodSearchResult } from "@/lib/nutrition/open-food-facts";
 
 export type FormActionState = { error: string | null };
@@ -101,4 +107,23 @@ export async function deleteMealLogAction(id: string) {
   await deleteMealLog(id);
   revalidatePath("/nutrition");
   revalidatePath("/today");
+}
+
+export async function saveFoodAction(input: unknown): Promise<FormActionState> {
+  const parsed = savedFoodInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid food entry." };
+  }
+  try {
+    await saveFood(parsed.data);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to save food." };
+  }
+  revalidatePath("/nutrition");
+  return { error: null };
+}
+
+export async function deleteSavedFoodAction(id: string) {
+  await deleteSavedFood(id);
+  revalidatePath("/nutrition");
 }
