@@ -8,6 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { MealDefault, MealType, SavedFood } from "@/lib/services/nutrition-service";
 import type { OpenFoodFactsResult } from "@/lib/nutrition/open-food-facts";
 import { GERMAN_STORES } from "@/lib/nutrition/stores";
@@ -355,6 +365,7 @@ function SavedFoodRow({
   onError: (message: string) => void;
 }) {
   const [editingDefaults, setEditingDefaults] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [mealDefaults, setMealDefaults] = useState<MealDefault[]>(food.mealDefaults);
   const [isPending, startTransition] = useTransition();
   const [isSaving, startSave] = useTransition();
@@ -425,12 +436,36 @@ function SavedFoodRow({
             variant="ghost"
             aria-label={`Forget ${food.foodName}`}
             disabled={isDeleting}
-            onClick={() => startDelete(() => deleteSavedFoodAction(food.id))}
+            onClick={() => setDeleteOpen(true)}
           >
             <Trash2 className="size-4" />
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Forget &quot;{food.foodName}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Removes it from Saved foods — you can always save it again next time you log it. Past log entries
+              aren&apos;t affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={() => {
+                setDeleteOpen(false);
+                startDelete(() => deleteSavedFoodAction(food.id));
+              }}
+            >
+              Forget
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="mt-2 flex flex-wrap gap-1.5">
         {food.mealDefaults.map((d) => (

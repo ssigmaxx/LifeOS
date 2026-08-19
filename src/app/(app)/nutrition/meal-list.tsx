@@ -1,8 +1,18 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { FoodLogEntry, MealType } from "@/lib/services/nutrition-service";
 import { deleteMealLogAction } from "./actions";
 
@@ -35,6 +45,7 @@ const MEAL_STYLES: Record<MealType, { section: string; header: string }> = {
 };
 
 function EntryRow({ entry }: { entry: FoodLogEntry }) {
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -58,10 +69,33 @@ function EntryRow({ entry }: { entry: FoodLogEntry }) {
         variant="ghost"
         aria-label={`Delete ${entry.foodName}`}
         disabled={isPending}
-        onClick={() => startTransition(() => deleteMealLogAction(entry.id))}
+        onClick={() => setDeleteOpen(true)}
       >
         <Trash2 className="size-4" />
       </Button>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete &quot;{entry.foodName}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes it from today&apos;s log and today&apos;s totals. This can&apos;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={() => {
+                setDeleteOpen(false);
+                startTransition(() => deleteMealLogAction(entry.id));
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
