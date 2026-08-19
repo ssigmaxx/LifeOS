@@ -3,8 +3,8 @@ import { ArrowRight, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { getTodaySummary } from "@/lib/services/today-service";
-import { listHabits } from "@/lib/services/habit-service";
+import { summarizeToday } from "@/lib/services/today-service";
+import { getTodayLogs, listHabits } from "@/lib/services/habit-service";
 import { listGoals } from "@/lib/services/goal-service";
 import { getDailyScoreSeries, resolveRange } from "@/lib/services/analytics-service";
 import { getDailyTotals, getNutritionProfile } from "@/lib/services/nutrition-service";
@@ -12,14 +12,18 @@ import { ScoreTrendChart } from "./analytics/score-trend-chart";
 import { NutritionCard } from "./today/nutrition-card";
 
 export default async function DashboardPage() {
-  const [summary, habits, goals, trend, nutritionProfile, nutritionTotals] = await Promise.all([
-    getTodaySummary(),
+  // listHabits() is fetched once and reused for both the streak list below
+  // and today's summary (via summarizeToday) — today-service's own
+  // getTodaySummary() would call listHabits() a second time internally.
+  const [habits, todayLogs, goals, trend, nutritionProfile, nutritionTotals] = await Promise.all([
     listHabits(),
+    getTodayLogs(),
     listGoals(),
     getDailyScoreSeries(resolveRange("7d")),
     getNutritionProfile(),
     getDailyTotals(),
   ]);
+  const summary = summarizeToday(habits, todayLogs);
 
   const scorePct = summary.score != null ? Math.round(summary.score * 100) : null;
   const activeStreaks = habits

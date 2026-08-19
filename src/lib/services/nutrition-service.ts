@@ -199,8 +199,10 @@ export async function getDailyLog(date?: string): Promise<FoodLogEntry[]> {
 
 export type DailyTotals = { calories: number; proteinG: number; carbsG: number; fatG: number };
 
-export async function getDailyTotals(date?: string): Promise<DailyTotals> {
-  const entries = await getDailyLog(date);
+// Pure — split out so callers that already have a getDailyLog() result
+// (e.g. the Nutrition page, which shows both the log and the totals) can
+// sum it locally instead of querying food_logs a second time.
+export function sumNutrition(entries: FoodLogEntry[]): DailyTotals {
   return entries.reduce(
     (totals, entry) => ({
       calories: totals.calories + entry.calories,
@@ -210,4 +212,9 @@ export async function getDailyTotals(date?: string): Promise<DailyTotals> {
     }),
     { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 },
   );
+}
+
+export async function getDailyTotals(date?: string): Promise<DailyTotals> {
+  const entries = await getDailyLog(date);
+  return sumNutrition(entries);
 }

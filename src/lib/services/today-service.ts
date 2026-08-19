@@ -17,8 +17,11 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export async function getTodaySummary(): Promise<TodaySummary> {
-  const [habits, todayLogs] = await Promise.all([listHabits(), getTodayLogs()]);
+// Pure — split out from getTodaySummary so callers that already have a
+// listHabits() result (e.g. the Dashboard, which also needs the full list
+// for streaks) can derive the summary without a second round-trip through
+// listHabits()'s three queries.
+export function summarizeToday(habits: Habit[], todayLogs: Record<string, TodayLogValue>): TodaySummary {
   const today = todayISO();
 
   const dueHabits: TodayHabit[] = habits
@@ -50,4 +53,9 @@ export async function getTodaySummary(): Promise<TodaySummary> {
     totalCount: dueHabits.length,
     score,
   };
+}
+
+export async function getTodaySummary(): Promise<TodaySummary> {
+  const [habits, todayLogs] = await Promise.all([listHabits(), getTodayLogs()]);
+  return summarizeToday(habits, todayLogs);
 }
