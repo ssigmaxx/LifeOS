@@ -219,6 +219,8 @@ export async function getDailyTotals(date?: string): Promise<DailyTotals> {
   return sumNutrition(entries);
 }
 
+export type MealDefault = { mealType: MealType; quantityGrams: number };
+
 export type SavedFood = {
   id: string;
   foodName: string;
@@ -227,8 +229,7 @@ export type SavedFood = {
   proteinPer100g: number;
   carbsPer100g: number;
   fatPer100g: number;
-  defaultQuantityGrams: number;
-  defaultMealTypes: MealType[];
+  mealDefaults: MealDefault[];
 };
 
 function mapSavedFoodRow(row: {
@@ -239,8 +240,7 @@ function mapSavedFoodRow(row: {
   protein_per_100g: number;
   carbs_per_100g: number;
   fat_per_100g: number;
-  default_quantity_grams: number;
-  default_meal_types: string[];
+  meal_defaults: MealDefault[];
 }): SavedFood {
   return {
     id: row.id,
@@ -250,8 +250,7 @@ function mapSavedFoodRow(row: {
     proteinPer100g: row.protein_per_100g,
     carbsPer100g: row.carbs_per_100g,
     fatPer100g: row.fat_per_100g,
-    defaultQuantityGrams: row.default_quantity_grams,
-    defaultMealTypes: row.default_meal_types as MealType[],
+    mealDefaults: row.meal_defaults,
   };
 }
 
@@ -260,7 +259,7 @@ export async function getSavedFoods(): Promise<SavedFood[]> {
   const { data, error } = await supabase
     .from("saved_foods")
     .select(
-      "id, food_name, source, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, default_quantity_grams, default_meal_types",
+      "id, food_name, source, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, meal_defaults",
     )
     .eq("user_id", userId)
     .order("food_name", { ascending: true });
@@ -277,8 +276,7 @@ export async function saveFood(input: {
   proteinPer100g: number;
   carbsPer100g: number;
   fatPer100g: number;
-  defaultQuantityGrams: number;
-  defaultMealTypes: MealType[];
+  mealDefaults: MealDefault[];
 }): Promise<void> {
   const { supabase, userId } = await requireUserId();
   const { error } = await supabase.from("saved_foods").upsert(
@@ -290,8 +288,7 @@ export async function saveFood(input: {
       protein_per_100g: input.proteinPer100g,
       carbs_per_100g: input.carbsPer100g,
       fat_per_100g: input.fatPer100g,
-      default_quantity_grams: input.defaultQuantityGrams,
-      default_meal_types: input.defaultMealTypes,
+      meal_defaults: input.mealDefaults,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id,food_name" },
