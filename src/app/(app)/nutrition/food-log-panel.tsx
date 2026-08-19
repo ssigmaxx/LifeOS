@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import type { MealType } from "@/lib/services/nutrition-service";
 import type { OpenFoodFactsResult } from "@/lib/nutrition/open-food-facts";
+import { GERMAN_STORES } from "@/lib/nutrition/stores";
 import { logFoodAction, searchFoodAction } from "./actions";
 
 const MEAL_OPTIONS: { value: MealType; label: string }[] = [
@@ -223,8 +224,10 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
 
 export function FoodLogPanel() {
   const [query, setQuery] = useState("");
+  const [store, setStore] = useState<string>("any");
   const [results, setResults] = useState<OpenFoodFactsResult[]>([]);
   const [searched, setSearched] = useState(false);
+  const [fellBackFromStore, setFellBackFromStore] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -234,14 +237,35 @@ export function FoodLogPanel() {
     setError(null);
     setNotice(null);
     startTransition(async () => {
-      const found = await searchFoodAction(query.trim());
+      const { results: found, matchedStore } = await searchFoodAction(
+        query.trim(),
+        store === "any" ? undefined : store,
+      );
       setResults(found);
       setSearched(true);
+      setFellBackFromStore(store !== "any" && !matchedStore && found.length > 0);
     });
   }
 
   return (
     <div className="space-y-3">
+      <div className="space-y-1.5">
+        <Label className="text-xs">Where did you buy this?</Label>
+        <Select value={store} onValueChange={(v) => setStore(v ?? "any")}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="any">Any store</SelectItem>
+            {GERMAN_STORES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="flex gap-2">
         <Input
           value={query}
@@ -261,6 +285,12 @@ export function FoodLogPanel() {
 
       {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+      {fellBackFromStore ? (
+        <p className="text-sm text-muted-foreground">
+          No matches tagged for {store} — showing results from all stores instead.
+        </p>
+      ) : null}
 
       {searched && results.length === 0 ? (
         <p className="text-sm text-muted-foreground">

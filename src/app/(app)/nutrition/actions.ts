@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { mealLogInputSchema, nutritionProfileInputSchema } from "@/lib/validations/nutrition";
 import { buildNutritionPlan, scaleNutrition, type NutritionPlan } from "@/lib/nutrition-calc";
 import { deleteMealLog, logMeal, upsertNutritionProfile } from "@/lib/services/nutrition-service";
-import { searchOpenFoodFacts, type OpenFoodFactsResult } from "@/lib/nutrition/open-food-facts";
+import { searchOpenFoodFacts, type FoodSearchResult } from "@/lib/nutrition/open-food-facts";
 
 export type FormActionState = { error: string | null };
 
@@ -56,8 +56,8 @@ export async function saveNutritionProfileAction(
   return { error: null, plan };
 }
 
-export async function searchFoodAction(query: string): Promise<OpenFoodFactsResult[]> {
-  return searchOpenFoodFacts(query);
+export async function searchFoodAction(query: string, store?: string): Promise<FoodSearchResult> {
+  return searchOpenFoodFacts(query, store);
 }
 
 export async function logFoodAction(input: unknown): Promise<FormActionState> {

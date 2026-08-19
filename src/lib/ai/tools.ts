@@ -190,10 +190,16 @@ export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   {
     name: "search_food",
     description:
-      "Search Open Food Facts (Germany) for a branded or packaged food by name. Returns per-100g calories/protein/carbs/fat for up to 5 matches. Use this first for anything packaged; if nothing reasonable comes back, fall back to your own best estimate for the closest German food equivalent and pass source='estimate' to propose_log_meal.",
+      "Search Open Food Facts (Germany) for a branded or packaged food by name. Returns per-100g calories/protein/carbs/fat for up to 5 matches. Use this first for anything packaged; if nothing reasonable comes back, fall back to your own best estimate for the closest German food equivalent and pass source='estimate' to propose_log_meal. If the user hasn't said where they bought it, ask which store (e.g. REWE, Netto, Kaufland, Edeka, Aldi, Lidl, Penny) before searching — store-specific results tend to match what's actually on their receipt. Store tagging is sparse, so if a store filter returns nothing this falls back to unfiltered results automatically; say so if that happens.",
     parametersJsonSchema: {
       type: "object",
-      properties: { query: { type: "string" } },
+      properties: {
+        query: { type: "string" },
+        store: {
+          type: "string",
+          description: "Optional — one of REWE, Netto, Kaufland, Edeka, Aldi, Lidl, Penny. Omit if unknown.",
+        },
+      },
       required: ["query"],
     },
   },
@@ -536,7 +542,8 @@ export const TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   async search_food(args) {
     const query = String(args.query ?? "").trim();
     if (!query) return { forModel: { error: "No search query given." } };
-    const results = await searchOpenFoodFacts(query);
+    const store = typeof args.store === "string" && args.store.trim() ? args.store.trim() : undefined;
+    const { results, matchedStore } = await searchOpenFoodFacts(query, store);
     if (results.length === 0) {
       return {
         forModel: {
@@ -545,7 +552,14 @@ export const TOOL_EXECUTORS: Record<string, ToolExecutor> = {
         },
       };
     }
-    return { forModel: { matches: results } };
+    return {
+      forModel: {
+        matches: results,
+        ...(store && !matchedStore
+          ? { note: `No matches tagged for ${store} — these are unfiltered results from all stores instead.` }
+          : {}),
+      },
+    };
   },
 
   async propose_log_meal(args) {

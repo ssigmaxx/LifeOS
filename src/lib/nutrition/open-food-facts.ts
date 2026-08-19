@@ -14,11 +14,18 @@ import "server-only";
 // the query and returns an arbitrary result set filtered only by whatever
 // other params were passed), which is exactly why every search used to
 // return the same handful of products regardless of what was typed.
-// search-a-licious takes a single Lucene-syntax `q` string; the country
-// filter has to be embedded in it as `countries_tags:"en:germany"` rather
-// than passed as its own param.
+// search-a-licious takes a single Lucene-syntax `q` string; both the
+// country and store filters have to be embedded in it (e.g.
+// countries_tags:"en:germany" stores:"Rewe") rather than passed as their
+// own params — those aren't recognized as separate query params here.
 const SEARCH_URL = "https://search.openfoodfacts.org/search";
 const USER_AGENT = "LifeOS-NutritionTracker/1.0 (personal use; not for redistribution)";
+
+// Community-contributed `stores` tagging is sparse — most products have
+// none at all — so a store filter that returns nothing falls back to an
+// unfiltered search rather than leaving the user with a dead end. The list
+// of stores itself (GERMAN_STORES) lives in ./stores, not here — this file
+// is server-only, but the store-selector UI needs the list client-side.
 
 export type OpenFoodFactsResult = {
   name: string;
@@ -30,18 +37,23 @@ export type OpenFoodFactsResult = {
   fatPer100g: number;
 };
 
+export type FoodSearchResult = {
+  results: OpenFoodFactsResult[];
+  /** True only when a store was requested and actually had matches. */
+  matchedStore: boolean;
+};
+
 function escapeLuceneQuery(term: string): string {
   // Lucene special characters that would otherwise change query meaning
   // or break parsing if a food name happens to contain them.
   return term.replace(/[+\-&|!(){}[\]^"~*?:\\/]/g, " ").trim();
 }
 
-export async function searchOpenFoodFacts(query: string): Promise<OpenFoodFactsResult[]> {
-  const trimmed = escapeLuceneQuery(query);
-  if (!trimmed) return [];
+async function runSearch(term: string, store: string | undefined): Promise<OpenFoodFactsResult[]> {
+  const filters = [`countries_tags:"en:germany"`, store ? `stores:"${store}"` : null].filter(Boolean);
 
   const url = new URL(SEARCH_URL);
-  url.searchParams.set("q", `countries_tags:"en:germany" ${trimmed}`);
+  url.searchParams.set("q", `${filters.join(" ")} ${term}`);
   url.searchParams.set("fields", "product_name,product_name_de,brands,quantity,nutriments");
   url.searchParams.set("page_size", "8");
 
@@ -96,4 +108,17 @@ export async function searchOpenFoodFacts(query: string): Promise<OpenFoodFactsR
   }
 
   return results;
+}
+
+export async function searchOpenFoodFacts(query: string, store?: string): Promise<FoodSearchResult> {
+  const trimmed = escapeLuceneQuery(query);
+  if (!trimmed) return { results: [], matchedStore: false };
+
+  if (store) {
+    const filtered = await runSearch(trimmed, store);
+    if (filtered.length > 0) return { results: filtered, matchedStore: true };
+  }
+
+  const unfiltered = await runSearch(trimmed, undefined);
+  return { results: unfiltered, matchedStore: false };
 }
