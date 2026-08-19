@@ -22,6 +22,25 @@ const MEAL_OPTIONS: { value: MealType; label: string }[] = [
 
 type Per100g = { caloriesPer100g: number; proteinPer100g: number; carbsPer100g: number; fatPer100g: number };
 
+// Lets a saved food default to more than one meal, e.g. the same yogurt
+// quick-added under both Breakfast and Dinner.
+function MealCheckboxGroup({ selected, onChange }: { selected: MealType[]; onChange: (meals: MealType[]) => void }) {
+  function toggle(meal: MealType) {
+    onChange(selected.includes(meal) ? selected.filter((m) => m !== meal) : [...selected, meal]);
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2.5">
+      {MEAL_OPTIONS.map((m) => (
+        <label key={m.value} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Checkbox checked={selected.includes(m.value)} onCheckedChange={() => toggle(m.value)} />
+          {m.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 function AddRow({
   name,
   per100g,
@@ -39,12 +58,17 @@ function AddRow({
   const [quantity, setQuantity] = useState("100");
   const [mealType, setMealType] = useState<MealType>("snack");
   const [remember, setRemember] = useState(false);
+  const [rememberMeals, setRememberMeals] = useState<MealType[]>(["snack"]);
   const [isPending, startTransition] = useTransition();
 
   function confirm() {
     const quantityGrams = Number(quantity);
     if (!quantityGrams || quantityGrams <= 0) {
       onError("Enter a portion size greater than 0.");
+      return;
+    }
+    if (remember && rememberMeals.length === 0) {
+      onError("Pick at least one meal to remember this for.");
       return;
     }
     startTransition(async () => {
@@ -64,7 +88,7 @@ function AddRow({
           foodName: name,
           source,
           defaultQuantityGrams: quantityGrams,
-          defaultMealType: mealType,
+          defaultMealTypes: rememberMeals,
           ...per100g,
         });
       }
@@ -101,7 +125,14 @@ function AddRow({
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Meal</Label>
-            <Select value={mealType} onValueChange={(v) => setMealType(v as MealType)}>
+            <Select
+              value={mealType}
+              onValueChange={(v) => {
+                const meal = v as MealType;
+                setMealType(meal);
+                setRememberMeals((prev) => (prev.length <= 1 ? [meal] : prev));
+              }}
+            >
               <SelectTrigger className="h-8 w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -117,10 +148,17 @@ function AddRow({
           <Button type="button" size="sm" disabled={isPending} onClick={confirm}>
             {isPending ? "Logging…" : "Confirm"}
           </Button>
-          <label className="flex items-center gap-1.5 pb-1.5 text-xs text-muted-foreground">
-            <Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
-            Remember for quick re-logging
-          </label>
+          <div className="w-full space-y-1.5 pt-1">
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
+              Remember for quick re-logging
+            </label>
+            {remember ? (
+              <div className="pl-5.5">
+                <MealCheckboxGroup selected={rememberMeals} onChange={setRememberMeals} />
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </div>
@@ -137,6 +175,7 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
   const [quantity, setQuantity] = useState("100");
   const [mealType, setMealType] = useState<MealType>("snack");
   const [remember, setRemember] = useState(false);
+  const [rememberMeals, setRememberMeals] = useState<MealType[]>(["snack"]);
   const [isPending, startTransition] = useTransition();
 
   if (!open) {
@@ -151,6 +190,7 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
     const quantityGrams = Number(quantity);
     if (!name.trim()) return onError("Enter a food name.");
     if (!quantityGrams || quantityGrams <= 0) return onError("Enter a portion size greater than 0.");
+    if (remember && rememberMeals.length === 0) return onError("Pick at least one meal to remember this for.");
 
     const per100g = {
       caloriesPer100g: Number(calories) || 0,
@@ -176,7 +216,7 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
           foodName: name.trim(),
           source: "estimate",
           defaultQuantityGrams: quantityGrams,
-          defaultMealType: mealType,
+          defaultMealTypes: rememberMeals,
           ...per100g,
         });
       }
@@ -189,6 +229,7 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
       setFat("");
       setQuantity("100");
       setRemember(false);
+      setRememberMeals(["snack"]);
     });
   }
 
@@ -227,7 +268,14 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Meal</Label>
-            <Select value={mealType} onValueChange={(v) => setMealType(v as MealType)}>
+            <Select
+              value={mealType}
+              onValueChange={(v) => {
+                const meal = v as MealType;
+                setMealType(meal);
+                setRememberMeals((prev) => (prev.length <= 1 ? [meal] : prev));
+              }}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -246,10 +294,17 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
           <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <label className="flex items-center gap-1.5 pb-1.5 text-xs text-muted-foreground">
+        </div>
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
             Remember for quick re-logging
           </label>
+          {remember ? (
+            <div className="pl-5.5">
+              <MealCheckboxGroup selected={rememberMeals} onChange={setRememberMeals} />
+            </div>
+          ) : null}
         </div>
       </CardContent>
     </Card>
@@ -259,16 +314,19 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
 function SavedFoodRow({
   food,
   onLogged,
+  onSaved,
   onError,
 }: {
   food: SavedFood;
   onLogged: () => void;
+  onSaved: () => void;
   onError: (message: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [editingDefaults, setEditingDefaults] = useState(false);
   const [quantity, setQuantity] = useState(String(food.defaultQuantityGrams));
-  const [mealType, setMealType] = useState<MealType>(food.defaultMealType);
+  const [defaultMeals, setDefaultMeals] = useState<MealType[]>(food.defaultMealTypes);
   const [isPending, startTransition] = useTransition();
+  const [isSaving, startSave] = useTransition();
   const [isDeleting, startDelete] = useTransition();
 
   function logWith(quantityGrams: number, meal: MealType) {
@@ -290,8 +348,37 @@ function SavedFoodRow({
       if (result.error) {
         onError(result.error);
       } else {
-        setExpanded(false);
         onLogged();
+      }
+    });
+  }
+
+  function saveDefaults() {
+    const quantityGrams = Number(quantity);
+    if (!quantityGrams || quantityGrams <= 0) {
+      onError("Enter a portion size greater than 0.");
+      return;
+    }
+    if (defaultMeals.length === 0) {
+      onError("Pick at least one meal.");
+      return;
+    }
+    startSave(async () => {
+      const result = await saveFoodAction({
+        foodName: food.foodName,
+        source: food.source,
+        caloriesPer100g: food.caloriesPer100g,
+        proteinPer100g: food.proteinPer100g,
+        carbsPer100g: food.carbsPer100g,
+        fatPer100g: food.fatPer100g,
+        defaultQuantityGrams: quantityGrams,
+        defaultMealTypes: defaultMeals,
+      });
+      if (result.error) {
+        onError(result.error);
+      } else {
+        setEditingDefaults(false);
+        onSaved();
       }
     });
   }
@@ -302,20 +389,11 @@ function SavedFoodRow({
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{food.foodName}</p>
           <p className="text-xs text-muted-foreground">
-            {Math.round(food.caloriesPer100g)} kcal / 100g · usually {food.defaultQuantityGrams}g ·{" "}
-            {MEAL_OPTIONS.find((m) => m.value === food.defaultMealType)?.label}
+            {Math.round(food.caloriesPer100g)} kcal / 100g · usually {food.defaultQuantityGrams}g
           </p>
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            size="sm"
-            disabled={isPending}
-            onClick={() => logWith(food.defaultQuantityGrams, food.defaultMealType)}
-          >
-            <Plus className="size-4" /> {isPending ? "Logging…" : "Add"}
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => setExpanded((v) => !v)}>
+          <Button type="button" size="sm" variant="outline" onClick={() => setEditingDefaults((v) => !v)}>
             Edit
           </Button>
           <Button
@@ -330,36 +408,43 @@ function SavedFoodRow({
           </Button>
         </div>
       </div>
-      {expanded ? (
-        <div className="mt-2.5 flex flex-wrap items-end gap-2 border-t pt-2.5">
-          <div className="space-y-1">
-            <Label className="text-xs">Grams</Label>
-            <Input
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="h-8 w-24"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Meal</Label>
-            <Select value={mealType} onValueChange={(v) => setMealType(v as MealType)}>
-              <SelectTrigger className="h-8 w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MEAL_OPTIONS.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button type="button" size="sm" disabled={isPending} onClick={() => logWith(Number(quantity), mealType)}>
-            {isPending ? "Logging…" : "Confirm"}
+
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {food.defaultMealTypes.map((meal) => (
+          <Button
+            key={meal}
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={isPending}
+            onClick={() => logWith(food.defaultQuantityGrams, meal)}
+          >
+            <Plus className="size-3.5" /> {MEAL_OPTIONS.find((m) => m.value === meal)?.label}
           </Button>
+        ))}
+      </div>
+
+      {editingDefaults ? (
+        <div className="mt-2.5 space-y-2 border-t pt-2.5">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Usual grams</Label>
+              <Input
+                type="number"
+                min={1}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="h-8 w-24"
+              />
+            </div>
+            <Button type="button" size="sm" disabled={isSaving} onClick={saveDefaults}>
+              {isSaving ? "Saving…" : "Save defaults"}
+            </Button>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Quick-add to</Label>
+            <MealCheckboxGroup selected={defaultMeals} onChange={setDefaultMeals} />
+          </div>
         </div>
       ) : null}
     </div>
@@ -404,6 +489,7 @@ export function FoodLogPanel({ savedFoods }: { savedFoods: SavedFood[] }) {
                 key={food.id}
                 food={food}
                 onLogged={() => setNotice(`Logged "${food.foodName}".`)}
+                onSaved={() => setNotice(`Updated "${food.foodName}".`)}
                 onError={setError}
               />
             ))}

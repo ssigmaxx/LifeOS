@@ -228,7 +228,7 @@ export type SavedFood = {
   carbsPer100g: number;
   fatPer100g: number;
   defaultQuantityGrams: number;
-  defaultMealType: MealType;
+  defaultMealTypes: MealType[];
 };
 
 function mapSavedFoodRow(row: {
@@ -240,7 +240,7 @@ function mapSavedFoodRow(row: {
   carbs_per_100g: number;
   fat_per_100g: number;
   default_quantity_grams: number;
-  default_meal_type: string;
+  default_meal_types: string[];
 }): SavedFood {
   return {
     id: row.id,
@@ -251,7 +251,7 @@ function mapSavedFoodRow(row: {
     carbsPer100g: row.carbs_per_100g,
     fatPer100g: row.fat_per_100g,
     defaultQuantityGrams: row.default_quantity_grams,
-    defaultMealType: row.default_meal_type as MealType,
+    defaultMealTypes: row.default_meal_types as MealType[],
   };
 }
 
@@ -260,7 +260,7 @@ export async function getSavedFoods(): Promise<SavedFood[]> {
   const { data, error } = await supabase
     .from("saved_foods")
     .select(
-      "id, food_name, source, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, default_quantity_grams, default_meal_type",
+      "id, food_name, source, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, default_quantity_grams, default_meal_types",
     )
     .eq("user_id", userId)
     .order("food_name", { ascending: true });
@@ -278,7 +278,7 @@ export async function saveFood(input: {
   carbsPer100g: number;
   fatPer100g: number;
   defaultQuantityGrams: number;
-  defaultMealType: MealType;
+  defaultMealTypes: MealType[];
 }): Promise<void> {
   const { supabase, userId } = await requireUserId();
   const { error } = await supabase.from("saved_foods").upsert(
@@ -291,7 +291,7 @@ export async function saveFood(input: {
       carbs_per_100g: input.carbsPer100g,
       fat_per_100g: input.fatPer100g,
       default_quantity_grams: input.defaultQuantityGrams,
-      default_meal_type: input.defaultMealType,
+      default_meal_types: input.defaultMealTypes,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id,food_name" },

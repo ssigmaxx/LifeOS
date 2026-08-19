@@ -67,7 +67,7 @@ export const savedFoodInputSchema = z.object({
   carbsPer100g: z.coerce.number().min(0).max(100),
   fatPer100g: z.coerce.number().min(0).max(100),
   defaultQuantityGrams: z.coerce.number().positive("Quantity must be greater than 0.").max(5000),
-  defaultMealType: mealTypeSchema,
+  defaultMealTypes: z.array(mealTypeSchema).min(1, "Pick at least one meal."),
 });
 
 export type SavedFoodInput = z.infer<typeof savedFoodInputSchema>;
