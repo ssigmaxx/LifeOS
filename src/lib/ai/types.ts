@@ -1,6 +1,8 @@
 import type { TrackingType } from "@/lib/habit-completion";
 import type { GoalFrequency } from "@/lib/goal-progress";
 import type { GoalMetricType } from "@/lib/services/goal-service";
+import type { ActivityLevel, BmiCategory, NutritionGoal, Sex } from "@/lib/nutrition-calc";
+import type { FoodSource, MealType } from "@/lib/services/nutrition-service";
 
 export type HabitProposal = {
   kind: "habit";
@@ -22,7 +24,41 @@ export type GoalProposal = {
   frequency: GoalFrequency;
 };
 
-export type Proposal = HabitProposal | GoalProposal;
+export type NutritionProfileProposal = {
+  kind: "nutrition_profile";
+  age: number;
+  sex: Sex;
+  heightCm: number;
+  weightKg: number;
+  activityLevel: ActivityLevel;
+  goal: NutritionGoal;
+  targetWeightChangeKg: number | null;
+  timeframeWeeks: number | null;
+  bmr: number;
+  tdee: number;
+  dailyCalorieTarget: number;
+  proteinTargetG: number;
+  carbsTargetG: number;
+  fatTargetG: number;
+  bmi: number;
+  bmiCategory: BmiCategory;
+  flags: string[];
+};
+
+export type MealLogProposal = {
+  kind: "meal_log";
+  mealType: MealType;
+  foodName: string;
+  source: FoodSource;
+  quantityGrams: number;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  isEstimate: boolean;
+};
+
+export type Proposal = HabitProposal | GoalProposal | NutritionProfileProposal | MealLogProposal;
 
 export type ToolExecutionResult = {
   /** JSON-serializable — sent back to Gemini as the functionResponse. */

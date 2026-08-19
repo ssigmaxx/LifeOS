@@ -11,6 +11,7 @@ import { getTodayMeditation } from "@/lib/services/meditation-service";
 import { getTodayWorkout } from "@/lib/services/workout-service";
 import { getTodayEntries } from "@/lib/services/journal-service";
 import { getTodayPhotos } from "@/lib/services/photo-service";
+import { getDailyTotals, getNutritionProfile } from "@/lib/services/nutrition-service";
 import { TodayHabitRow } from "./today-habit-row";
 import { WaterCard } from "./water-card";
 import { SleepCard } from "./sleep-card";
@@ -19,6 +20,7 @@ import { MeditationCard } from "./meditation-card";
 import { WorkoutCard } from "./workout-card";
 import { JournalCard } from "./journal-card";
 import { PhotosCard } from "./photos-card";
+import { NutritionCard } from "./nutrition-card";
 
 function greeting(hour: number) {
   if (hour < 5) return "Good night";
@@ -28,18 +30,31 @@ function greeting(hour: number) {
 }
 
 export default async function TodayPage() {
-  const [summary, water, latestSleep, currentFast, lastFast, meditation, workout, journal, photos] =
-    await Promise.all([
-      getTodaySummary(),
-      getTodayWater(),
-      getLatestSleep(),
-      getCurrentFast(),
-      getLastCompletedFast(),
-      getTodayMeditation(),
-      getTodayWorkout(),
-      getTodayEntries(),
-      getTodayPhotos(),
-    ]);
+  const [
+    summary,
+    water,
+    latestSleep,
+    currentFast,
+    lastFast,
+    meditation,
+    workout,
+    journal,
+    photos,
+    nutritionProfile,
+    nutritionTotals,
+  ] = await Promise.all([
+    getTodaySummary(),
+    getTodayWater(),
+    getLatestSleep(),
+    getCurrentFast(),
+    getLastCompletedFast(),
+    getTodayMeditation(),
+    getTodayWorkout(),
+    getTodayEntries(),
+    getTodayPhotos(),
+    getNutritionProfile(),
+    getDailyTotals(),
+  ]);
 
   const today = new Date();
   const dateLabel = today.toLocaleDateString("en-US", {
@@ -115,6 +130,7 @@ export default async function TodayPage() {
       <div className="space-y-2">
         <h2 className="text-sm font-medium text-muted-foreground">Lifestyle</h2>
         <div className="space-y-2">
+          <NutritionCard profile={nutritionProfile} totals={nutritionTotals} />
           <WaterCard water={water} />
           <SleepCard latest={latestSleep} />
           <FastingCard current={currentFast} lastCompleted={lastFast} />

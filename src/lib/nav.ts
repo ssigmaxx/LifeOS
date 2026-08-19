@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  Apple,
   BarChart3,
   BookOpen,
   Calendar,
@@ -27,6 +28,7 @@ export const primaryNav: NavItem[] = [
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/photos", label: "Photos", icon: Images },
   { href: "/journal", label: "Journal", icon: BookOpen },
+  { href: "/nutrition", label: "Nutrition", icon: Apple },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/ai-coach", label: "AI Coach", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },
@@ -44,6 +46,7 @@ export const mobileNav: NavItem[] = [
 export const moreNav: NavItem[] = [
   { href: "/habits", label: "Habits", icon: ListChecks },
   { href: "/journal", label: "Journal", icon: BookOpen },
+  { href: "/nutrition", label: "Nutrition", icon: Apple },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/ai-coach", label: "AI Coach", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },

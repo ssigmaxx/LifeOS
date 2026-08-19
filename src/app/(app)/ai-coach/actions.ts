@@ -6,9 +6,12 @@ import { createHabit } from "@/lib/services/habit-service";
 import { createGoal } from "@/lib/services/goal-service";
 import { habitFormSchema } from "@/lib/validations/habit";
 import { goalFormSchema } from "@/lib/validations/goal";
+import { nutritionProfileInputSchema, mealLogConfirmSchema } from "@/lib/validations/nutrition";
+import { buildNutritionPlan } from "@/lib/nutrition-calc";
+import { logMeal, upsertNutritionProfile } from "@/lib/services/nutrition-service";
 import { checkAiRateLimit } from "@/lib/ai/rate-limit";
 import { runAiConversationTurn } from "@/lib/ai/gemini";
-import type { GoalProposal, HabitProposal, Proposal } from "@/lib/ai/types";
+import type { GoalProposal, HabitProposal, MealLogProposal, NutritionProfileProposal, Proposal } from "@/lib/ai/types";
 import {
   getConversationHistoryForModel,
   getOrCreateConversation,
@@ -67,7 +70,8 @@ export async function sendMessageAction(
   let turn;
   try {
     turn = await runAiConversationTurn(history, trimmed);
-  } catch {
+  } catch (err) {
+    console.error("[ai-coach] runAiConversationTurn failed:", err);
     return {
       conversationId: convoId,
       text: "",
@@ -141,5 +145,80 @@ export async function confirmGoalProposalAction(proposal: GoalProposal): Promise
   }
 
   revalidatePath("/goals");
+  return { error: null };
+}
+
+// Recomputes the plan from the proposal's raw inputs rather than trusting
+// its precomputed BMI/BMR/TDEE/target fields — the client could tamper
+// with those without touching the inputs they were derived from.
+export async function confirmNutritionProfileAction(
+  proposal: NutritionProfileProposal,
+): Promise<ConfirmActionState> {
+  const parsed = nutritionProfileInputSchema.safeParse({
+    age: proposal.age,
+    sex: proposal.sex,
+    heightCm: proposal.heightCm,
+    weightKg: proposal.weightKg,
+    activityLevel: proposal.activityLevel,
+    goal: proposal.goal,
+    targetWeightChangeKg: proposal.targetWeightChangeKg,
+    timeframeWeeks: proposal.timeframeWeeks,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid nutrition profile." };
+  }
+
+  const plan = buildNutritionPlan(parsed.data);
+
+  try {
+    await upsertNutritionProfile({
+      age: parsed.data.age,
+      sex: parsed.data.sex,
+      heightCm: parsed.data.heightCm,
+      weightKg: parsed.data.weightKg,
+      activityLevel: parsed.data.activityLevel,
+      goal: parsed.data.goal,
+      targetWeightChangeKg: parsed.data.targetWeightChangeKg ?? null,
+      timeframeWeeks: parsed.data.timeframeWeeks ?? null,
+      bmr: plan.bmr,
+      tdee: plan.tdee,
+      dailyCalorieTarget: plan.dailyCalorieTarget,
+      proteinTargetG: plan.macroTargets.proteinG,
+      carbsTargetG: plan.macroTargets.carbsG,
+      fatTargetG: plan.macroTargets.fatG,
+    });
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to save nutrition profile." };
+  }
+
+  revalidatePath("/nutrition");
+  revalidatePath("/today");
+  return { error: null };
+}
+
+export async function confirmMealLogAction(proposal: MealLogProposal): Promise<ConfirmActionState> {
+  const parsed = mealLogConfirmSchema.safeParse({
+    mealType: proposal.mealType,
+    foodName: proposal.foodName,
+    source: proposal.source,
+    quantityGrams: proposal.quantityGrams,
+    calories: proposal.calories,
+    proteinG: proposal.proteinG,
+    carbsG: proposal.carbsG,
+    fatG: proposal.fatG,
+    isEstimate: proposal.isEstimate,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid meal log." };
+  }
+
+  try {
+    await logMeal(parsed.data);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to log meal." };
+  }
+
+  revalidatePath("/nutrition");
+  revalidatePath("/today");
   return { error: null };
 }

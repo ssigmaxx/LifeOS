@@ -19,6 +19,10 @@ import {
 import { listGoals } from "@/lib/services/goal-service";
 import { habitFormSchema } from "@/lib/validations/habit";
 import { goalFormSchema } from "@/lib/validations/goal";
+import { nutritionProfileInputSchema, mealLogInputSchema } from "@/lib/validations/nutrition";
+import { buildNutritionPlan, scaleNutrition } from "@/lib/nutrition-calc";
+import { searchOpenFoodFacts } from "@/lib/nutrition/open-food-facts";
+import { getDailyTotals, getNutritionProfile } from "@/lib/services/nutrition-service";
 import type { ToolExecutionResult } from "./types";
 
 const dateRangeParams = {
@@ -145,6 +149,83 @@ export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
         },
       },
       required: ["name", "metricType", "targetValue", "frequency"],
+    },
+  },
+  {
+    name: "get_nutrition_profile",
+    description:
+      "Get the user's saved calorie/macro targets (BMR, TDEE, daily calorie target, protein/carbs/fat targets), if they've set one up. Call this before discussing calorie targets so you don't ask for inputs they've already given.",
+    parametersJsonSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "propose_nutrition_profile",
+    description:
+      "Compute a daily calorie/macro target from the user's stats and goal, for the user to review and confirm. This never saves anything directly — it only computes and drafts a proposal. Always collect age, sex, height, current weight, and activity level before calling this; ask one concise follow-up question at a time for whichever of these you don't have. Do not do the BMR/TDEE/calorie arithmetic yourself — this tool does it.",
+    parametersJsonSchema: {
+      type: "object",
+      properties: {
+        age: { type: "number" },
+        sex: { type: "string", enum: ["male", "female"] },
+        heightCm: { type: "number" },
+        weightKg: { type: "number" },
+        activityLevel: {
+          type: "string",
+          enum: ["sedentary", "light", "moderate", "active", "very_active"],
+          description:
+            "sedentary = little/no exercise, light = 1-3 days/week, moderate = 3-5 days/week, active = 6-7 days/week, very_active = physical job or 2x/day training.",
+        },
+        goal: { type: "string", enum: ["lose", "maintain", "gain"] },
+        targetWeightChangeKg: {
+          type: "number",
+          description: "Total desired weight change in kg (positive number). Omit for 'maintain'.",
+        },
+        timeframeWeeks: {
+          type: "number",
+          description: "Timeframe in weeks to reach that change. Omit for 'maintain'.",
+        },
+      },
+      required: ["age", "sex", "heightCm", "weightKg", "activityLevel", "goal"],
+    },
+  },
+  {
+    name: "search_food",
+    description:
+      "Search Open Food Facts (Germany) for a branded or packaged food by name. Returns per-100g calories/protein/carbs/fat for up to 5 matches. Use this first for anything packaged; if nothing reasonable comes back, fall back to your own best estimate for the closest German food equivalent and pass source='estimate' to propose_log_meal.",
+    parametersJsonSchema: {
+      type: "object",
+      properties: { query: { type: "string" } },
+      required: ["query"],
+    },
+  },
+  {
+    name: "propose_log_meal",
+    description:
+      "Draft a food log entry for the user to review and confirm — never logs anything directly. Give per-100g macros (either from search_food, or your own estimate for the closest German food equivalent) plus the portion size in grams; this tool scales the macros to the actual portion itself, so give per-100g values, not already-scaled ones.",
+    parametersJsonSchema: {
+      type: "object",
+      properties: {
+        mealType: { type: "string", enum: ["breakfast", "lunch", "dinner", "snack"] },
+        foodName: { type: "string" },
+        source: {
+          type: "string",
+          enum: ["open_food_facts", "estimate"],
+          description: "'open_food_facts' only when the numbers came from a search_food match; otherwise 'estimate'.",
+        },
+        quantityGrams: { type: "number", description: "Portion size actually eaten, in grams." },
+        caloriesPer100g: { type: "number" },
+        proteinPer100g: { type: "number" },
+        carbsPer100g: { type: "number" },
+        fatPer100g: { type: "number" },
+      },
+      required: ["mealType", "foodName", "source", "quantityGrams", "caloriesPer100g", "proteinPer100g", "carbsPer100g", "fatPer100g"],
+    },
+  },
+  {
+    name: "get_daily_nutrition_summary",
+    description: "Calories and macros logged today (or a given date) versus the user's daily target, plus what's remaining.",
+    parametersJsonSchema: {
+      type: "object",
+      properties: { date: { type: "string", description: "YYYY-MM-DD, defaults to today." } },
     },
   },
 ];
@@ -377,6 +458,176 @@ export const TOOL_EXECUTORS: Record<string, ToolExecutor> = {
         metricType: parsed.data.metricType,
         targetValue: parsed.data.targetValue,
         frequency: parsed.data.frequency,
+      },
+    };
+  },
+
+  async get_nutrition_profile() {
+    const profile = await getNutritionProfile();
+    if (!profile) return { forModel: { hasProfile: false } };
+    return {
+      forModel: {
+        hasProfile: true,
+        dailyCalorieTarget: profile.dailyCalorieTarget,
+        proteinTargetG: profile.proteinTargetG,
+        carbsTargetG: profile.carbsTargetG,
+        fatTargetG: profile.fatTargetG,
+        bmr: profile.bmr,
+        tdee: profile.tdee,
+        goal: profile.goal,
+      },
+    };
+  },
+
+  async propose_nutrition_profile(args) {
+    const parsed = nutritionProfileInputSchema.safeParse({
+      age: args.age,
+      sex: args.sex,
+      heightCm: args.heightCm,
+      weightKg: args.weightKg,
+      activityLevel: args.activityLevel,
+      goal: args.goal,
+      targetWeightChangeKg: args.targetWeightChangeKg,
+      timeframeWeeks: args.timeframeWeeks,
+    });
+    if (!parsed.success) {
+      return { forModel: { error: parsed.error.issues[0]?.message ?? "Invalid profile input." } };
+    }
+
+    const plan = buildNutritionPlan(parsed.data);
+
+    return {
+      forModel: {
+        status: "drafted",
+        summary: "Computed a calorie/macro target for the user to review. These are estimates from standard formulas, not medical advice.",
+        bmi: plan.bmi,
+        bmiCategory: plan.bmiCategory,
+        bmr: plan.bmr,
+        tdee: plan.tdee,
+        dailyCalorieTarget: plan.dailyCalorieTarget,
+        macroTargets: plan.macroTargets,
+        estimatedWeeklyRateKg: plan.realizedWeeklyRateKg,
+        wasClamped: plan.wasClamped,
+        safetyFlags: plan.flags,
+      },
+      proposal: {
+        kind: "nutrition_profile",
+        age: parsed.data.age,
+        sex: parsed.data.sex,
+        heightCm: parsed.data.heightCm,
+        weightKg: parsed.data.weightKg,
+        activityLevel: parsed.data.activityLevel,
+        goal: parsed.data.goal,
+        targetWeightChangeKg: parsed.data.targetWeightChangeKg ?? null,
+        timeframeWeeks: parsed.data.timeframeWeeks ?? null,
+        bmr: plan.bmr,
+        tdee: plan.tdee,
+        dailyCalorieTarget: plan.dailyCalorieTarget,
+        proteinTargetG: plan.macroTargets.proteinG,
+        carbsTargetG: plan.macroTargets.carbsG,
+        fatTargetG: plan.macroTargets.fatG,
+        bmi: plan.bmi,
+        bmiCategory: plan.bmiCategory,
+        flags: plan.flags,
+      },
+    };
+  },
+
+  async search_food(args) {
+    const query = String(args.query ?? "").trim();
+    if (!query) return { forModel: { error: "No search query given." } };
+    const results = await searchOpenFoodFacts(query);
+    if (results.length === 0) {
+      return {
+        forModel: {
+          matches: [],
+          note: "No Open Food Facts match found — use your own best estimate for the closest German food equivalent, and pass source='estimate' to propose_log_meal.",
+        },
+      };
+    }
+    return { forModel: { matches: results } };
+  },
+
+  async propose_log_meal(args) {
+    const parsed = mealLogInputSchema.safeParse({
+      mealType: args.mealType,
+      foodName: args.foodName,
+      source: args.source,
+      quantityGrams: args.quantityGrams,
+      caloriesPer100g: args.caloriesPer100g,
+      proteinPer100g: args.proteinPer100g,
+      carbsPer100g: args.carbsPer100g,
+      fatPer100g: args.fatPer100g,
+    });
+    if (!parsed.success) {
+      return { forModel: { error: parsed.error.issues[0]?.message ?? "Invalid meal log." } };
+    }
+
+    const scaled = scaleNutrition(
+      {
+        calories: parsed.data.caloriesPer100g,
+        proteinG: parsed.data.proteinPer100g,
+        carbsG: parsed.data.carbsPer100g,
+        fatG: parsed.data.fatPer100g,
+      },
+      parsed.data.quantityGrams,
+    );
+    const isEstimate = parsed.data.source === "estimate";
+
+    return {
+      forModel: {
+        status: "drafted",
+        summary: `Drafted "${parsed.data.foodName}" (${parsed.data.quantityGrams}g) for the user to review.`,
+        ...scaled,
+        isEstimate,
+      },
+      proposal: {
+        kind: "meal_log",
+        mealType: parsed.data.mealType,
+        foodName: parsed.data.foodName,
+        source: parsed.data.source,
+        quantityGrams: parsed.data.quantityGrams,
+        calories: scaled.calories,
+        proteinG: scaled.proteinG,
+        carbsG: scaled.carbsG,
+        fatG: scaled.fatG,
+        isEstimate,
+      },
+    };
+  },
+
+  async get_daily_nutrition_summary(args) {
+    const date = typeof args.date === "string" && args.date ? args.date : todayISO();
+    const [totals, profile] = await Promise.all([getDailyTotals(date), getNutritionProfile()]);
+
+    if (!profile) {
+      return {
+        forModel: {
+          date,
+          consumed: totals,
+          hasTarget: false,
+          note: "No calorie target set up yet.",
+        },
+      };
+    }
+
+    return {
+      forModel: {
+        date,
+        consumed: totals,
+        hasTarget: true,
+        target: {
+          calories: profile.dailyCalorieTarget,
+          proteinG: profile.proteinTargetG,
+          carbsG: profile.carbsTargetG,
+          fatG: profile.fatTargetG,
+        },
+        remaining: {
+          calories: profile.dailyCalorieTarget - totals.calories,
+          proteinG: Math.round((profile.proteinTargetG - totals.proteinG) * 10) / 10,
+          carbsG: Math.round((profile.carbsTargetG - totals.carbsG) * 10) / 10,
+          fatG: Math.round((profile.fatTargetG - totals.fatG) * 10) / 10,
+        },
       },
     };
   },
