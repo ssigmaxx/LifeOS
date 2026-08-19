@@ -40,3 +40,37 @@ self.addEventListener("fetch", (event) => {
     fetch(event.request).catch(() => caches.match(OFFLINE_URL)),
   );
 });
+
+// Web Push: payload is JSON set by the server ({ title, body, url }) —
+// see src/lib/notifications/push.ts. Falls back to a generic notification
+// if the payload is missing or malformed so a push never silently no-ops.
+self.addEventListener("push", (event) => {
+  let payload = { title: "LifeOS", body: "You have a new update.", url: "/" };
+  try {
+    if (event.data) payload = { ...payload, ...event.data.json() };
+  } catch {
+    // Non-JSON payload — keep the fallback above.
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: "/icon",
+      badge: "/icon",
+      data: { url: payload.url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url ?? "/";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((client) => new URL(client.url).pathname === url);
+      if (existing) return existing.focus();
+      return self.clients.openWindow(url);
+    }),
+  );
+});
