@@ -7,7 +7,17 @@ import "server-only";
 // (see propose_log_meal in ai/tools.ts) — this app does not have access to
 // the real German Bundeslebensmittelschlüssel (BLS), which is a licensed
 // dataset rather than a public API.
-const SEARCH_URL = "https://world.openfoodfacts.org/api/v2/search";
+//
+// Uses the "search-a-licious" service (search.openfoodfacts.org), not the
+// legacy /api/v2/search endpoint — the legacy endpoint's `search_terms`
+// parameter no longer does real full-text matching (it silently ignores
+// the query and returns an arbitrary result set filtered only by whatever
+// other params were passed), which is exactly why every search used to
+// return the same handful of products regardless of what was typed.
+// search-a-licious takes a single Lucene-syntax `q` string; the country
+// filter has to be embedded in it as `countries_tags:"en:germany"` rather
+// than passed as its own param.
+const SEARCH_URL = "https://search.openfoodfacts.org/search";
 const USER_AGENT = "LifeOS-NutritionTracker/1.0 (personal use; not for redistribution)";
 
 export type OpenFoodFactsResult = {
@@ -20,13 +30,18 @@ export type OpenFoodFactsResult = {
   fatPer100g: number;
 };
 
+function escapeLuceneQuery(term: string): string {
+  // Lucene special characters that would otherwise change query meaning
+  // or break parsing if a food name happens to contain them.
+  return term.replace(/[+\-&|!(){}[\]^"~*?:\\/]/g, " ").trim();
+}
+
 export async function searchOpenFoodFacts(query: string): Promise<OpenFoodFactsResult[]> {
-  const trimmed = query.trim();
+  const trimmed = escapeLuceneQuery(query);
   if (!trimmed) return [];
 
   const url = new URL(SEARCH_URL);
-  url.searchParams.set("search_terms", trimmed);
-  url.searchParams.set("countries_tags_en", "germany");
+  url.searchParams.set("q", `countries_tags:"en:germany" ${trimmed}`);
   url.searchParams.set("fields", "product_name,product_name_de,brands,quantity,nutriments");
   url.searchParams.set("page_size", "8");
 
@@ -35,6 +50,7 @@ export async function searchOpenFoodFacts(query: string): Promise<OpenFoodFactsR
     response = await fetch(url, {
       headers: { "User-Agent": USER_AGENT },
       signal: AbortSignal.timeout(8000),
+      cache: "no-store",
     });
   } catch {
     return [];
@@ -48,8 +64,8 @@ export async function searchOpenFoodFacts(query: string): Promise<OpenFoodFactsR
     return [];
   }
 
-  const products = Array.isArray((data as { products?: unknown[] })?.products)
-    ? (data as { products: unknown[] }).products
+  const products = Array.isArray((data as { hits?: unknown[] })?.hits)
+    ? (data as { hits: unknown[] }).hits
     : [];
 
   const results: OpenFoodFactsResult[] = [];
@@ -64,10 +80,11 @@ export async function searchOpenFoodFacts(query: string): Promise<OpenFoodFactsR
     const protein = Number(nutriments["proteins_100g"]);
     const carbs = Number(nutriments["carbohydrates_100g"]);
     const fat = Number(nutriments["fat_100g"]);
+    const brands = product.brands;
 
     results.push({
       name,
-      brand: typeof product.brands === "string" && product.brands ? product.brands.split(",")[0].trim() : null,
+      brand: Array.isArray(brands) && typeof brands[0] === "string" ? brands[0] : null,
       quantity: typeof product.quantity === "string" ? product.quantity : null,
       caloriesPer100g: calories,
       proteinPer100g: Number.isFinite(protein) ? protein : 0,
