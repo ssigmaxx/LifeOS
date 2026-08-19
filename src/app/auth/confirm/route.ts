@@ -3,9 +3,19 @@ import { redirect } from "next/navigation";
 import { type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+// Only ever redirect to a relative in-app path. Without this check, a
+// crafted link like /auth/confirm?...&next=https://evil.com (or the
+// protocol-relative //evil.com) would bounce a freshly-authenticated user
+// straight to an attacker-controlled site right after a trusted auth flow —
+// a classic open-redirect phishing vector.
+function safeNextPath(next: string | null): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/";
+  return next;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const next = searchParams.get("next") ?? "/";
+  const next = safeNextPath(searchParams.get("next"));
   const supabase = await createClient();
 
   // Default Supabase email templates route through their hosted verify
