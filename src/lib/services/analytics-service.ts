@@ -12,6 +12,8 @@ import {
   type TrackingType,
 } from "@/lib/habit-completion";
 import { average, maxOf, minOf, stdDev } from "@/lib/stats";
+import { describeCorrelation, pairSamples, pearsonCorrelation } from "@/lib/correlation";
+import { getDailyCarbonTotals } from "@/lib/services/carbon-service";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -563,4 +565,155 @@ export async function getDayDetail(date: string): Promise<DayDetail> {
   );
 
   return { date, score, habits };
+}
+
+// ---------------------------------------------------------------------
+// Cross-metric insights — spots simple pairwise relationships between
+// things you're already tracking (e.g. "meditation and sleep tend to move
+// together"). Deliberately a curated, small set of pairs rather than every
+// possible combination: a wall of stats isn't calming, and testing many
+// pairs on a small personal dataset makes weak/spurious correlations more
+// likely to turn up by chance.
+// ---------------------------------------------------------------------
+
+type DailyMetricKey = "sleepMinutes" | "waterMl" | "meditationMinutes" | "workoutCompleted" | "journalMood" | "habitScore" | "carbonKg";
+
+const METRIC_LABELS: Record<DailyMetricKey, string> = {
+  sleepMinutes: "Sleep duration",
+  waterMl: "Water intake",
+  meditationMinutes: "Meditation",
+  workoutCompleted: "Workouts",
+  journalMood: "Journal mood",
+  habitScore: "Daily habit score",
+  carbonKg: "Carbon footprint",
+};
+
+// Curated, not exhaustive — see note above.
+const CANDIDATE_PAIRS: [DailyMetricKey, DailyMetricKey][] = [
+  ["sleepMinutes", "habitScore"],
+  ["meditationMinutes", "sleepMinutes"],
+  ["meditationMinutes", "journalMood"],
+  ["workoutCompleted", "journalMood"],
+  ["waterMl", "habitScore"],
+  ["carbonKg", "habitScore"],
+];
+
+const MIN_SAMPLE_SIZE = 7;
+const MIN_ABS_CORRELATION = 0.3;
+const MAX_INSIGHTS = 4;
+
+export type CrossMetricInsight = {
+  metricA: string;
+  metricB: string;
+  r: number;
+  strength: "weak" | "moderate" | "strong";
+  direction: "positive" | "negative";
+  sampleSize: number;
+};
+
+async function getDailyMetricMaps(range: DateRange): Promise<Record<DailyMetricKey, Map<string, number>>> {
+  const { supabase, userId } = await requireUserId();
+
+  const [sleep, water, meditation, workout, journal, scoreSeries, carbonKg] = await Promise.all([
+    supabase
+      .from("sleep_logs")
+      .select("duration_minutes, sleep_end")
+      .eq("user_id", userId)
+      .gte("sleep_end", `${range.start}T00:00:00.000Z`)
+      .lt("sleep_end", `${range.end}T23:59:59.999Z`),
+    supabase
+      .from("water_logs")
+      .select("amount_ml, logged_at")
+      .eq("user_id", userId)
+      .gte("logged_at", `${range.start}T00:00:00.000Z`)
+      .lt("logged_at", `${range.end}T23:59:59.999Z`),
+    supabase
+      .from("meditation_sessions")
+      .select("session_date, duration_minutes")
+      .eq("user_id", userId)
+      .gte("session_date", range.start)
+      .lte("session_date", range.end),
+    supabase
+      .from("workout_logs")
+      .select("workout_date, completed")
+      .eq("user_id", userId)
+      .gte("workout_date", range.start)
+      .lte("workout_date", range.end),
+    supabase
+      .from("journal_entries")
+      .select("entry_date, mood")
+      .eq("user_id", userId)
+      .not("mood", "is", null)
+      .gte("entry_date", range.start)
+      .lte("entry_date", range.end),
+    getDailyScoreSeries(range),
+    getDailyCarbonTotals(range),
+  ]);
+  if (sleep.error) throw sleep.error;
+  if (water.error) throw water.error;
+  if (meditation.error) throw meditation.error;
+  if (workout.error) throw workout.error;
+  if (journal.error) throw journal.error;
+
+  const sleepMinutes = new Map<string, number>();
+  for (const row of sleep.data) {
+    const date = row.sleep_end.slice(0, 10);
+    sleepMinutes.set(date, (sleepMinutes.get(date) ?? 0) + row.duration_minutes);
+  }
+
+  const waterMl = new Map<string, number>();
+  for (const row of water.data) {
+    const date = row.logged_at.slice(0, 10);
+    waterMl.set(date, (waterMl.get(date) ?? 0) + row.amount_ml);
+  }
+
+  const meditationMinutes = new Map<string, number>();
+  for (const row of meditation.data) {
+    meditationMinutes.set(row.session_date, (meditationMinutes.get(row.session_date) ?? 0) + row.duration_minutes);
+  }
+
+  const workoutCompleted = new Map<string, number>();
+  for (const row of workout.data) {
+    workoutCompleted.set(row.workout_date, row.completed ? 1 : 0);
+  }
+
+  const moodSumByDate = new Map<string, { sum: number; count: number }>();
+  for (const row of journal.data) {
+    const entry = moodSumByDate.get(row.entry_date) ?? { sum: 0, count: 0 };
+    entry.sum += row.mood!;
+    entry.count += 1;
+    moodSumByDate.set(row.entry_date, entry);
+  }
+  const journalMood = new Map<string, number>();
+  for (const [date, { sum, count }] of moodSumByDate) journalMood.set(date, sum / count);
+
+  const habitScore = new Map<string, number>();
+  for (const point of scoreSeries) if (point.score != null) habitScore.set(point.date, point.score);
+
+  return { sleepMinutes, waterMl, meditationMinutes, workoutCompleted, journalMood, habitScore, carbonKg };
+}
+
+export async function getCrossMetricInsights(range: DateRange): Promise<CrossMetricInsight[]> {
+  const maps = await getDailyMetricMaps(range);
+
+  const insights: CrossMetricInsight[] = [];
+  for (const [keyA, keyB] of CANDIDATE_PAIRS) {
+    const samples = pairSamples(maps[keyA], maps[keyB]);
+    if (samples.length < MIN_SAMPLE_SIZE) continue;
+
+    const r = pearsonCorrelation(samples);
+    if (r == null || Math.abs(r) < MIN_ABS_CORRELATION) continue;
+
+    const { strength, direction } = describeCorrelation(r);
+    insights.push({
+      metricA: METRIC_LABELS[keyA],
+      metricB: METRIC_LABELS[keyB],
+      r,
+      strength,
+      direction,
+      sampleSize: samples.length,
+    });
+  }
+
+  return insights.sort((a, b) => Math.abs(b.r) - Math.abs(a.r)).slice(0, MAX_INSIGHTS);
 }

@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatMinutes, formatMl } from "@/lib/format";
 import { average } from "@/lib/stats";
 import {
+  getCrossMetricInsights,
   getDailyScoreSeries,
   getFastingAnalytics,
   getHabitsAnalytics,
@@ -28,6 +29,7 @@ import { ScoreTrendChart } from "./score-trend-chart";
 import { HabitComparison } from "./habit-comparison";
 import { MetricCard } from "./metric-card";
 import { Heatmap } from "./heatmap";
+import { InsightsCard } from "./insights-card";
 
 const VALID_RANGES: RangePreset[] = ["7d", "30d", "90d", "6m", "1y"];
 
@@ -47,7 +49,7 @@ export default async function AnalyticsPage({
   const dateRange = resolveRange(range);
   const yearRange = resolveRange("1y");
 
-  const [habits, sleep, water, fasting, meditation, workout, journal, scoreSeries, yearSeries] =
+  const [habits, sleep, water, fasting, meditation, workout, journal, scoreSeries, yearSeries, insights] =
     await Promise.all([
       getHabitsAnalytics(dateRange),
       getSleepAnalytics(dateRange),
@@ -58,6 +60,7 @@ export default async function AnalyticsPage({
       getJournalAnalytics(dateRange),
       getDailyScoreSeries(dateRange),
       getDailyScoreSeries(yearRange),
+      getCrossMetricInsights(dateRange),
     ]);
 
   const avgHabitCompletion = average(habits.map((h) => h.completionRate));
@@ -141,6 +144,11 @@ export default async function AnalyticsPage({
             { label: "Evening", value: pct(journal.eveningRate) },
           ]}
         />
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-sm font-medium text-muted-foreground">Patterns</h2>
+        <InsightsCard insights={insights} />
       </div>
 
       <Card>
