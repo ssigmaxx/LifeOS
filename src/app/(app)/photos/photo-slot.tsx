@@ -113,7 +113,7 @@ export function PhotoSlot({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
+              variant="destructive-solid"
               onClick={() => {
                 setDeleteOpen(false);
                 deletePhotoAction(photoDate, photoType);

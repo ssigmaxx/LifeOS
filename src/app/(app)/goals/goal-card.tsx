@@ -100,7 +100,7 @@ export function GoalCard({ goal }: { goal: Goal }) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
+              variant="destructive-solid"
               onClick={() => {
                 setDeleteOpen(false);
                 deleteGoalAction(goal.id);

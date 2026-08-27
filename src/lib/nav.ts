@@ -6,6 +6,7 @@ import {
   Calendar,
   Home,
   Images,
+  Leaf,
   LayoutDashboard,
   ListChecks,
   Settings,
@@ -19,20 +20,49 @@ export type NavItem = {
   icon: LucideIcon;
 };
 
-// Full set, used by the desktop sidebar.
-export const primaryNav: NavItem[] = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/today", label: "Today", icon: Home },
-  { href: "/habits", label: "Habits", icon: ListChecks },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/photos", label: "Photos", icon: Images },
-  { href: "/journal", label: "Journal", icon: BookOpen },
-  { href: "/nutrition", label: "Nutrition", icon: Apple },
-  { href: "/goals", label: "Goals", icon: Target },
-  { href: "/ai-coach", label: "AI Coach", icon: Sparkles },
-  { href: "/settings", label: "Settings", icon: Settings },
+export type NavSection = {
+  label: string;
+  items: NavItem[];
+};
+
+// Grouped for the desktop sidebar — a flat 12-item list stops reading as a
+// hierarchy, so related screens are clustered under a short section label
+// instead. Settings is pinned separately, below the sections.
+export const primaryNavSections: NavSection[] = [
+  {
+    label: "Overview",
+    items: [
+      { href: "/", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/today", label: "Today", icon: Home },
+    ],
+  },
+  {
+    label: "Track",
+    items: [
+      { href: "/habits", label: "Habits", icon: ListChecks },
+      { href: "/nutrition", label: "Nutrition", icon: Apple },
+      { href: "/carbon", label: "Carbon", icon: Leaf },
+      { href: "/goals", label: "Goals", icon: Target },
+    ],
+  },
+  {
+    label: "Reflect",
+    items: [
+      { href: "/journal", label: "Journal", icon: BookOpen },
+      { href: "/photos", label: "Photos", icon: Images },
+      { href: "/ai-coach", label: "AI Coach", icon: Sparkles },
+    ],
+  },
+  {
+    label: "Analyze",
+    items: [
+      { href: "/analytics", label: "Analytics", icon: BarChart3 },
+      { href: "/calendar", label: "Calendar", icon: Calendar },
+    ],
+  },
 ];
+
+export const settingsNavItem: NavItem = { href: "/settings", label: "Settings", icon: Settings };
 
 // Mobile bottom nav shows only the highest-frequency screens; everything
 // else lives behind "More" (see moreNav below).
@@ -43,11 +73,14 @@ export const mobileNav: NavItem[] = [
   { href: "/photos", label: "Photos", icon: Images },
 ];
 
+// Ordered to match the desktop grouping (Track, then Reflect, then Analyze).
 export const moreNav: NavItem[] = [
   { href: "/habits", label: "Habits", icon: ListChecks },
-  { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/nutrition", label: "Nutrition", icon: Apple },
+  { href: "/carbon", label: "Carbon", icon: Leaf },
   { href: "/goals", label: "Goals", icon: Target },
+  { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/ai-coach", label: "AI Coach", icon: Sparkles },
+  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

@@ -57,7 +57,7 @@ function EntryRow({ entry }: { entry: FoodLogEntry }) {
         <p className="text-xs text-muted-foreground">
           {entry.calories} kcal · {entry.proteinG}g P · {entry.carbsG}g C · {entry.fatG}g F
           {entry.isEstimate ? (
-            <span className="ml-1 inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-500">
+            <span className="ml-1 inline-flex items-center gap-0.5 text-warning">
               <TriangleAlert className="size-3" /> estimate
             </span>
           ) : null}
@@ -85,7 +85,7 @@ function EntryRow({ entry }: { entry: FoodLogEntry }) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
+              variant="destructive-solid"
               onClick={() => {
                 setDeleteOpen(false);
                 startTransition(() => deleteMealLogAction(entry.id));

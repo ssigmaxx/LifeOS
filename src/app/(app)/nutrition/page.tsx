@@ -25,7 +25,7 @@ export default async function NutritionPage() {
   const totals = sumNutrition(entries);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Nutrition</h1>

@@ -1,6 +1,6 @@
 import { Plus, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/empty-state";
 import { listCategories, listHabits, getTodayLogs } from "@/lib/services/habit-service";
 import { CategoryFormDialog } from "./category-form-dialog";
 import { HabitCard } from "./habit-card";
@@ -39,17 +39,11 @@ export default async function HabitsPage() {
       </div>
 
       {habits.length === 0 ? (
-        <Card className="border-dashed">
-          <CardHeader className="items-center text-center">
-            <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-muted">
-              <ListChecks className="size-6 text-muted-foreground" />
-            </div>
-            <CardTitle className="text-base font-medium">No habits yet</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center text-sm text-muted-foreground">
-            Create your first habit to start tracking.
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={ListChecks}
+          title="No habits yet"
+          description="Create your first habit to start tracking."
+        />
       ) : (
         <div className="space-y-6">
           <div className="space-y-2">

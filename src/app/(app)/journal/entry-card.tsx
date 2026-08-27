@@ -96,7 +96,7 @@ export function EntryCard({ entry }: { entry: JournalEntry }) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
+              variant="destructive-solid"
               onClick={() => {
                 setDeleteOpen(false);
                 deleteJournalEntryAction(entry.id);

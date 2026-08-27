@@ -127,7 +127,7 @@ export function HabitCard({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
+              variant="destructive-solid"
               onClick={() => {
                 setDeleteOpen(false);
                 deleteHabitAction(habit.id);

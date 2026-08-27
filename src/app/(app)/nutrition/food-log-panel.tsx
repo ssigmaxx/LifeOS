@@ -276,7 +276,7 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
   return (
     <Card>
       <CardContent className="space-y-3 py-3">
-        <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-500">
+        <div className="flex items-center gap-1.5 text-xs text-warning">
           <TriangleAlert className="size-3.5" /> Manual entries are estimates — no database match.
         </div>
         <div className="space-y-1.5">
@@ -455,7 +455,7 @@ function SavedFoodRow({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
+              variant="destructive-solid"
               onClick={() => {
                 setDeleteOpen(false);
                 startDelete(() => deleteSavedFoodAction(food.id));

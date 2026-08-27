@@ -3,6 +3,7 @@ import { ListChecks } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/empty-state";
 import { getTodaySummary } from "@/lib/services/today-service";
 import { getTodayWater } from "@/lib/services/water-service";
 import { getLatestSleep } from "@/lib/services/sleep-service";
@@ -12,6 +13,7 @@ import { getTodayWorkout } from "@/lib/services/workout-service";
 import { getTodayEntries } from "@/lib/services/journal-service";
 import { getTodayPhotos } from "@/lib/services/photo-service";
 import { getDailyTotals, getNutritionProfile } from "@/lib/services/nutrition-service";
+import { getTodayCarbonTotal } from "@/lib/services/carbon-service";
 import { TodayHabitRow } from "./today-habit-row";
 import { WaterCard } from "./water-card";
 import { SleepCard } from "./sleep-card";
@@ -21,6 +23,7 @@ import { WorkoutCard } from "./workout-card";
 import { JournalCard } from "./journal-card";
 import { PhotosCard } from "./photos-card";
 import { NutritionCard } from "./nutrition-card";
+import { FootprintCard } from "./footprint-card";
 
 function greeting(hour: number) {
   if (hour < 5) return "Good night";
@@ -42,6 +45,7 @@ export default async function TodayPage() {
     photos,
     nutritionProfile,
     nutritionTotals,
+    footprint,
   ] = await Promise.all([
     getTodaySummary(),
     getTodayWater(),
@@ -54,6 +58,7 @@ export default async function TodayPage() {
     getTodayPhotos(),
     getNutritionProfile(),
     getDailyTotals(),
+    getTodayCarbonTotal(),
   ]);
 
   const today = new Date();
@@ -95,17 +100,11 @@ export default async function TodayPage() {
       <div className="space-y-2">
         <h2 className="text-sm font-medium text-muted-foreground">Habits</h2>
         {summary.dueHabits.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-              <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-                <ListChecks className="size-6 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Nothing scheduled today</p>
-                <p className="text-sm text-muted-foreground">
-                  Create a habit or check its schedule.
-                </p>
-              </div>
+          <EmptyState
+            icon={ListChecks}
+            title="Nothing scheduled today"
+            description="Create a habit or check its schedule."
+            action={
               <Button
                 size="sm"
                 variant="outline"
@@ -114,8 +113,8 @@ export default async function TodayPage() {
               >
                 Go to Habits
               </Button>
-            </CardContent>
-          </Card>
+            }
+          />
         ) : (
           <Card>
             <CardContent className="divide-y py-0">
@@ -129,7 +128,7 @@ export default async function TodayPage() {
 
       <div className="space-y-2">
         <h2 className="text-sm font-medium text-muted-foreground">Lifestyle</h2>
-        <div className="space-y-2">
+        <div className="grid gap-2 md:grid-cols-2">
           <NutritionCard profile={nutritionProfile} totals={nutritionTotals} />
           <WaterCard water={water} />
           <SleepCard latest={latestSleep} />
@@ -138,6 +137,7 @@ export default async function TodayPage() {
           <WorkoutCard workout={workout} />
           <JournalCard morning={journal.morning} evening={journal.evening} />
           <PhotosCard face={photos.face} body={photos.body} />
+          <FootprintCard totalCo2eKg={footprint.totalCo2eKg} />
         </div>
       </div>
     </div>

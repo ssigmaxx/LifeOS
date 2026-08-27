@@ -141,9 +141,9 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
               <span>{ACTIVITY_LABELS[proposal.activityLevel]}</span>
             </div>
             {proposal.flags.length > 0 ? (
-              <div className="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
+              <div className="space-y-1 rounded-md border border-warning/30 bg-warning/5 p-2">
                 {proposal.flags.map((flag, i) => (
-                  <p key={i} className="flex gap-1.5 text-xs text-amber-700 dark:text-amber-500">
+                  <p key={i} className="flex gap-1.5 text-xs text-warning">
                     <TriangleAlert className="size-3.5 shrink-0 translate-y-0.5" />
                     {flag}
                   </p>
@@ -167,7 +167,7 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
               {proposal.carbsG}g carbs · {proposal.fatG}g fat
             </p>
             {proposal.isEstimate ? (
-              <p className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-500">
+              <p className="flex items-center gap-1 text-xs text-warning">
                 <TriangleAlert className="size-3.5" /> Estimated — no exact database match found.
               </p>
             ) : (

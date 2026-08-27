@@ -1,5 +1,6 @@
 import { BookOpen } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/empty-state";
 import { getTodayEntries, listJournalEntries } from "@/lib/services/journal-service";
 import { JournalCard } from "@/app/(app)/today/journal-card";
 import { SearchForm } from "./search-form";
@@ -47,21 +48,11 @@ export default async function JournalPage({
         <SearchForm defaultValue={search ?? ""} />
 
         {groups.size === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-              <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-                <BookOpen className="size-6 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">
-                  {search ? "No entries match your search" : "No journal entries yet"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {search ? "Try a different search term." : "Log your first entry above."}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={BookOpen}
+            title={search ? "No entries match your search" : "No journal entries yet"}
+            description={search ? "Try a different search term." : "Log your first entry above."}
+          />
         ) : (
           Array.from(groups.entries()).map(([dateISO, dayEntries]) => (
             <Card key={dateISO}>

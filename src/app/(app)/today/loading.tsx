@@ -59,8 +59,8 @@ export default function TodayLoading() {
 
       <div className="space-y-2">
         <Skeleton className="h-4 w-20" />
-        <div className="space-y-2">
-          {Array.from({ length: 8 }).map((_, i) => (
+        <div className="grid gap-2 md:grid-cols-2">
+          {Array.from({ length: 9 }).map((_, i) => (
             <LifestyleCardSkeleton key={i} />
           ))}
         </div>

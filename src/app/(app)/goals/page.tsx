@@ -1,6 +1,6 @@
 import { Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/empty-state";
 import { listGoals } from "@/lib/services/goal-service";
 import { GoalCard } from "./goal-card";
 import { GoalFormDialog } from "./goal-form-dialog";
@@ -29,17 +29,11 @@ export default async function GoalsPage() {
       </div>
 
       {goals.length === 0 ? (
-        <Card className="border-dashed">
-          <CardHeader className="items-center text-center">
-            <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-muted">
-              <Target className="size-6 text-muted-foreground" />
-            </div>
-            <CardTitle className="text-base font-medium">No goals yet</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center text-sm text-muted-foreground">
-            Set a target for water, sleep, meditation, gym, or fasting.
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Target}
+          title="No goals yet"
+          description="Set a target for water, sleep, meditation, gym, or fasting."
+        />
       ) : (
         <div className="space-y-6">
           <div className="space-y-2">
