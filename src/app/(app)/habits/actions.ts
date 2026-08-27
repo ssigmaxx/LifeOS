@@ -30,6 +30,7 @@ function parseHabitFormData(formData: FormData) {
     startDate: formData.get("startDate"),
     frequency: formData.get("frequency"),
     weekdays: formData.getAll("weekdays"),
+    sharedWithFriends: formData.get("sharedWithFriends"),
   });
 }
 

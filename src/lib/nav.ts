@@ -12,6 +12,7 @@ import {
   Settings,
   Sparkles,
   Target,
+  Users,
 } from "lucide-react";
 
 export type NavItem = {
@@ -43,6 +44,7 @@ export const primaryNavSections: NavSection[] = [
       { href: "/nutrition", label: "Nutrition", icon: Apple },
       { href: "/carbon", label: "Carbon", icon: Leaf },
       { href: "/goals", label: "Goals", icon: Target },
+      { href: "/friends", label: "Friends", icon: Users },
     ],
   },
   {
@@ -79,6 +81,7 @@ export const moreNav: NavItem[] = [
   { href: "/nutrition", label: "Nutrition", icon: Apple },
   { href: "/carbon", label: "Carbon", icon: Leaf },
   { href: "/goals", label: "Goals", icon: Target },
+  { href: "/friends", label: "Friends", icon: Users },
   { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/ai-coach", label: "AI Coach", icon: Sparkles },
   { href: "/calendar", label: "Calendar", icon: Calendar },

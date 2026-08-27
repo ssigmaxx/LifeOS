@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -54,6 +55,7 @@ export function HabitFormDialog({
     habit && habit.scheduleWeekdays.length > 0 ? "custom" : "daily",
   );
   const [weekdays, setWeekdays] = useState<number[]>(habit?.scheduleWeekdays ?? []);
+  const [sharedWithFriends, setSharedWithFriends] = useState(habit?.sharedWithFriends ?? false);
 
   // Close the dialog once a submission succeeds. `setOpen` may be a parent's
   // setter (controlled usage from HabitCard's edit menu), so this has to
@@ -95,6 +97,7 @@ export function HabitFormDialog({
           action={(formData) => {
             formData.set("trackingType", trackingType);
             formData.set("frequency", frequency);
+            formData.set("sharedWithFriends", String(sharedWithFriends));
             formAction(formData);
           }}
           className="space-y-4"
@@ -245,6 +248,20 @@ export function HabitFormDialog({
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+            <div>
+              <Label htmlFor="sharedWithFriends">Share with friends</Label>
+              <p className="text-xs text-muted-foreground">
+                Friends you&apos;re connected with can see this habit&apos;s full history.
+              </p>
+            </div>
+            <Switch
+              id="sharedWithFriends"
+              checked={sharedWithFriends}
+              onCheckedChange={setSharedWithFriends}
+            />
           </div>
 
           {state.error ? (

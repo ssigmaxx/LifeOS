@@ -25,6 +25,7 @@ export type Habit = {
   endDate: string | null;
   scheduleWeekdays: number[];
   streak: StreakResult;
+  sharedWithFriends: boolean;
 };
 
 async function requireUserId() {
@@ -68,7 +69,7 @@ export async function listHabits(): Promise<Habit[]> {
   const { data: habitRows, error: habitsError } = await supabase
     .from("habits")
     .select(
-      "id, category_id, name, description, icon, tracking_type, unit, target_value, score_weight, is_active, start_date, end_date, sort_order",
+      "id, category_id, name, description, icon, tracking_type, unit, target_value, score_weight, is_active, start_date, end_date, sort_order, shared_with_friends",
     )
     .eq("user_id", userId)
     .order("sort_order")
@@ -143,6 +144,7 @@ export async function listHabits(): Promise<Habit[]> {
       endDate: row.end_date,
       scheduleWeekdays: scheduleByHabit.get(row.id) ?? [],
       streak,
+      sharedWithFriends: row.shared_with_friends,
     };
   });
 }
@@ -187,6 +189,7 @@ export async function createHabit(values: HabitFormValues): Promise<string> {
       target_value: values.targetValue ?? null,
       score_weight: values.scoreWeight,
       start_date: values.startDate,
+      shared_with_friends: values.sharedWithFriends,
     })
     .select("id")
     .single();
@@ -214,6 +217,7 @@ export async function updateHabit(id: string, values: HabitFormValues): Promise<
       target_value: values.targetValue ?? null,
       score_weight: values.scoreWeight,
       start_date: values.startDate,
+      shared_with_friends: values.sharedWithFriends,
     })
     .eq("id", id);
   if (error) throw error;

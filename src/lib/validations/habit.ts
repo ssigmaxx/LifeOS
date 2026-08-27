@@ -27,6 +27,7 @@ export const habitFormSchema = z
     startDate: z.string().min(1, "Start date is required."),
     frequency: frequencySchema,
     weekdays: z.array(z.coerce.number().int().min(0).max(6)).optional().default([]),
+    sharedWithFriends: z.preprocess((val) => val === "true", z.boolean()).default(false),
   })
   .refine(
     (data) => data.frequency !== "custom" || data.weekdays.length > 0,
