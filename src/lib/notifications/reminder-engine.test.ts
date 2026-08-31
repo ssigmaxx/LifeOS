@@ -129,17 +129,36 @@ describe("buildMorningBriefingMessage", () => {
 });
 
 describe("buildEveningReviewMessage", () => {
+  const noHabits = { dueCount: 0, completedCount: 0 };
+  const noTodos = { dueCount: 0, completedCount: 0 };
+
   it("handles a day with nothing scheduled", () => {
-    expect(buildEveningReviewMessage({ dueCount: 0, completedCount: 0 })).toContain(
+    expect(buildEveningReviewMessage({ habits: noHabits, todos: noTodos })).toContain(
       "how did today go",
     );
   });
 
-  it("celebrates a fully completed day", () => {
-    expect(buildEveningReviewMessage({ dueCount: 3, completedCount: 3 })).toContain("All 3");
+  it("reports habit completion", () => {
+    expect(
+      buildEveningReviewMessage({ habits: { dueCount: 3, completedCount: 1 }, todos: noTodos }),
+    ).toContain("1/3 habits");
   });
 
-  it("reports partial completion", () => {
-    expect(buildEveningReviewMessage({ dueCount: 3, completedCount: 1 })).toContain("1/3 habits done today, 2 left");
+  it("reports todo completion alongside habits", () => {
+    const message = buildEveningReviewMessage({
+      habits: { dueCount: 3, completedCount: 3 },
+      todos: { dueCount: 2, completedCount: 1 },
+    });
+    expect(message).toContain("3/3 habits");
+    expect(message).toContain("1/2 todos");
+  });
+
+  it("omits a category entirely when nothing was due in it", () => {
+    const message = buildEveningReviewMessage({
+      habits: noHabits,
+      todos: { dueCount: 2, completedCount: 2 },
+    });
+    expect(message).not.toContain("habits");
+    expect(message).toContain("2/2 todos");
   });
 });

@@ -7,13 +7,16 @@ import {
   type HabitLogEntry,
 } from "@/lib/streaks";
 import {
-  calculateDailyHabitsScore,
+  calculateWeightedScore,
+  getCompletionFraction,
   isLogComplete,
   type TrackingType,
 } from "@/lib/habit-completion";
 import { average, maxOf, minOf, stdDev } from "@/lib/stats";
 import { describeCorrelation, pairSamples, pearsonCorrelation } from "@/lib/correlation";
 import { getDailyCarbonTotals } from "@/lib/services/carbon-service";
+import { getTodosDueInRange, listTodosDueOnDateWithId } from "@/lib/services/todo-service";
+import { listEventsForDate } from "@/lib/services/calendar-service";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -179,7 +182,7 @@ export async function getHabitsAnalytics(range: DateRange): Promise<HabitAnalyti
 
 // ---------------------------------------------------------------------
 // Daily score series (habits-weighted score per day — see
-// habit-completion.calculateDailyHabitsScore) — powers the Analytics
+// habit-completion.calculateWeightedScore) — powers the Analytics
 // trend chart, the Calendar's color-coded days, and the heatmap.
 // ---------------------------------------------------------------------
 
@@ -188,14 +191,24 @@ export type DailyScorePoint = { date: string; score: number | null };
 export async function getDailyScoreSeries(range: DateRange): Promise<DailyScorePoint[]> {
   const { supabase, userId } = await requireUserId();
 
-  const { data: habitRows, error: habitsError } = await supabase
-    .from("habits")
-    .select("id, tracking_type, score_weight, is_active, start_date, end_date")
-    .eq("user_id", userId);
+  const [{ data: habitRows, error: habitsError }, todosByDate] = await Promise.all([
+    supabase
+      .from("habits")
+      .select("id, tracking_type, score_weight, is_active, start_date, end_date")
+      .eq("user_id", userId),
+    getTodosDueInRange(range.start, range.end),
+  ]);
   if (habitsError) throw habitsError;
 
   const dates = enumerateDates(range.start, range.end);
-  if (habitRows.length === 0) return dates.map((date) => ({ date, score: null }));
+  if (habitRows.length === 0) {
+    return dates.map((date) => ({
+      date,
+      score: calculateWeightedScore(
+        (todosByDate.get(date) ?? []).map((t) => ({ fraction: t.completed ? 1 : 0, weight: 1 })),
+      ),
+    }));
+  }
 
   const habitIds = habitRows.map((h) => h.id);
 
@@ -229,7 +242,7 @@ export async function getDailyScoreSeries(range: DateRange): Promise<DailyScoreP
   }
 
   return dates.map((date) => {
-    const entries = habitRows
+    const habitEntries = habitRows
       .filter((h) =>
         isHabitDueToday({
           isActive: h.is_active,
@@ -241,21 +254,26 @@ export async function getDailyScoreSeries(range: DateRange): Promise<DailyScoreP
       )
       .map((h) => {
         const log = logByHabitAndDate.get(`${h.id}|${date}`);
+        const trackingType = h.tracking_type as TrackingType;
         return {
-          trackingType: h.tracking_type as TrackingType,
-          scoreWeight: h.score_weight,
-          log: log
-            ? {
+          fraction: log
+            ? getCompletionFraction(trackingType, {
                 valueBoolean: log.value_boolean,
                 valueNumeric: log.value_numeric,
                 valueSeconds: log.value_seconds,
                 targetValueSnapshot: log.target_value_snapshot,
-              }
-            : null,
+              })
+            : 0,
+          weight: h.score_weight,
         };
       });
 
-    return { date, score: calculateDailyHabitsScore(entries) };
+    const todoEntries = (todosByDate.get(date) ?? []).map((t) => ({
+      fraction: t.completed ? 1 : 0,
+      weight: 1,
+    }));
+
+    return { date, score: calculateWeightedScore([...habitEntries, ...todoEntries]) };
   });
 }
 
@@ -475,21 +493,51 @@ export type DayHabitDetail = {
   completed: boolean;
 };
 
+export type DayTodoDetail = { id: string; title: string; completed: boolean };
+export type DayEventDetail = {
+  id: string;
+  title: string;
+  color: string;
+  startAt: string;
+  endAt: string | null;
+  isAllDay: boolean;
+};
+
 export type DayDetail = {
   date: string;
   score: number | null;
   habits: DayHabitDetail[];
+  todos: DayTodoDetail[];
+  events: DayEventDetail[];
 };
 
 export async function getDayDetail(date: string): Promise<DayDetail> {
   const { supabase, userId } = await requireUserId();
 
-  const { data: habitRows, error: habitsError } = await supabase
-    .from("habits")
-    .select("id, name, icon, tracking_type, score_weight, is_active, start_date, end_date")
-    .eq("user_id", userId);
+  const [{ data: habitRows, error: habitsError }, todos, events] = await Promise.all([
+    supabase
+      .from("habits")
+      .select("id, name, icon, tracking_type, score_weight, is_active, start_date, end_date")
+      .eq("user_id", userId),
+    listTodosDueOnDateWithId(date),
+    listEventsForDate(date),
+  ]);
   if (habitsError) throw habitsError;
-  if (habitRows.length === 0) return { date, score: null, habits: [] };
+
+  const dayTodos: DayTodoDetail[] = todos.map((t) => ({ id: t.id, title: t.title, completed: t.completed }));
+  const dayEvents: DayEventDetail[] = events.map((e) => ({
+    id: e.id,
+    title: e.title,
+    color: e.calendarColor,
+    startAt: e.startAt,
+    endAt: e.endAt,
+    isAllDay: e.isAllDay,
+  }));
+
+  if (habitRows.length === 0) {
+    const score = calculateWeightedScore(dayTodos.map((t) => ({ fraction: t.completed ? 1 : 0, weight: 1 })));
+    return { date, score, habits: [], todos: dayTodos, events: dayEvents };
+  }
 
   const habitIds = habitRows.map((h) => h.id);
 
@@ -546,25 +594,25 @@ export async function getDayDetail(date: string): Promise<DayDetail> {
     };
   });
 
-  const score = calculateDailyHabitsScore(
-    dueHabits.map((h) => {
-      const log = logByHabit.get(h.id);
-      return {
-        trackingType: h.tracking_type as TrackingType,
-        scoreWeight: h.score_weight,
-        log: log
-          ? {
-              valueBoolean: log.value_boolean,
-              valueNumeric: log.value_numeric,
-              valueSeconds: log.value_seconds,
-              targetValueSnapshot: log.target_value_snapshot,
-            }
-          : null,
-      };
-    }),
-  );
+  const habitEntries = dueHabits.map((h) => {
+    const log = logByHabit.get(h.id);
+    const trackingType = h.tracking_type as TrackingType;
+    return {
+      fraction: log
+        ? getCompletionFraction(trackingType, {
+            valueBoolean: log.value_boolean,
+            valueNumeric: log.value_numeric,
+            valueSeconds: log.value_seconds,
+            targetValueSnapshot: log.target_value_snapshot,
+          })
+        : 0,
+      weight: h.score_weight,
+    };
+  });
+  const todoEntries = dayTodos.map((t) => ({ fraction: t.completed ? 1 : 0, weight: 1 }));
+  const score = calculateWeightedScore([...habitEntries, ...todoEntries]);
 
-  return { date, score, habits };
+  return { date, score, habits, todos: dayTodos, events: dayEvents };
 }
 
 // ---------------------------------------------------------------------

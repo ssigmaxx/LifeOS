@@ -64,6 +64,22 @@ export function getCompletionFraction(
 }
 
 /**
+ * Weighted average of independently-computed 0-1 fractions — the general
+ * form of the daily score. Kept separate from habit-log shapes so non-habit
+ * sources (e.g. todos due today, see daily-recap-service.ts) can be mixed
+ * in by callers without this function knowing anything about them.
+ */
+export function calculateWeightedScore(
+  entries: readonly { fraction: number; weight: number }[],
+): number | null {
+  const totalWeight = entries.reduce((sum, e) => sum + e.weight, 0);
+  if (totalWeight <= 0) return null;
+
+  const earned = entries.reduce((sum, e) => sum + e.fraction * e.weight, 0);
+  return earned / totalWeight;
+}
+
+/**
  * Weighted daily score across a set of habits (0-1). Each habit's
  * completion fraction is computed independently before weighting, so a
  * large numeric habit can never dominate a boolean one just because its
@@ -76,15 +92,10 @@ export function calculateDailyHabitsScore(
     log: RawHabitLogValue | null;
   }[],
 ): number | null {
-  const totalWeight = entries.reduce((sum, e) => sum + e.scoreWeight, 0);
-  if (totalWeight <= 0) return null;
-
-  const earned = entries.reduce((sum, e) => {
-    const fraction = e.log
-      ? getCompletionFraction(e.trackingType, e.log)
-      : 0;
-    return sum + fraction * e.scoreWeight;
-  }, 0);
-
-  return earned / totalWeight;
+  return calculateWeightedScore(
+    entries.map((e) => ({
+      fraction: e.log ? getCompletionFraction(e.trackingType, e.log) : 0,
+      weight: e.scoreWeight,
+    })),
+  );
 }

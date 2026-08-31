@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateDailyHabitsScore,
+  calculateWeightedScore,
   getCompletionFraction,
   isLogComplete,
 } from "./habit-completion";
@@ -98,6 +99,32 @@ describe("calculateDailyHabitsScore", () => {
         log: { ...emptyLog, valueBoolean: true },
       },
       { trackingType: "boolean", scoreWeight: 1, log: null },
+    ]);
+    expect(score).toBeCloseTo(0.75);
+  });
+});
+
+describe("calculateWeightedScore", () => {
+  it("returns null for an empty or zero-total-weight entry list", () => {
+    expect(calculateWeightedScore([])).toBeNull();
+    expect(calculateWeightedScore([{ fraction: 1, weight: 0 }])).toBeNull();
+  });
+
+  it("averages fractions weighted by weight", () => {
+    const score = calculateWeightedScore([
+      { fraction: 1, weight: 1 },
+      { fraction: 0, weight: 1 },
+    ]);
+    expect(score).toBeCloseTo(0.5);
+  });
+
+  it("lets todos and habits mix as equally-weighted entries", () => {
+    // 2 habits done of 2, 1 todo done of 2 -> 3/4 overall.
+    const score = calculateWeightedScore([
+      { fraction: 1, weight: 1 },
+      { fraction: 1, weight: 1 },
+      { fraction: 1, weight: 1 },
+      { fraction: 0, weight: 1 },
     ]);
     expect(score).toBeCloseTo(0.75);
   });

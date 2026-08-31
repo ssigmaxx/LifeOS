@@ -90,6 +90,9 @@ export default async function TodayPage() {
                 {summary.completedCount} of {summary.totalCount} habits done
               </p>
             ) : null}
+            <Link href="/recap" className="text-xs text-muted-foreground hover:underline">
+              See today&apos;s recap →
+            </Link>
           </div>
           <div className="w-28 shrink-0">
             <Progress value={scorePct ?? 0} />

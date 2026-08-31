@@ -9,6 +9,7 @@ import {
   Leaf,
   LayoutDashboard,
   ListChecks,
+  ListTodo,
   Settings,
   Sparkles,
   Target,
@@ -41,6 +42,7 @@ export const primaryNavSections: NavSection[] = [
     label: "Track",
     items: [
       { href: "/habits", label: "Habits", icon: ListChecks },
+      { href: "/todos", label: "Todos", icon: ListTodo },
       { href: "/nutrition", label: "Nutrition", icon: Apple },
       { href: "/carbon", label: "Carbon", icon: Leaf },
       { href: "/goals", label: "Goals", icon: Target },
@@ -78,6 +80,7 @@ export const mobileNav: NavItem[] = [
 // Ordered to match the desktop grouping (Track, then Reflect, then Analyze).
 export const moreNav: NavItem[] = [
   { href: "/habits", label: "Habits", icon: ListChecks },
+  { href: "/todos", label: "Todos", icon: ListTodo },
   { href: "/nutrition", label: "Nutrition", icon: Apple },
   { href: "/carbon", label: "Carbon", icon: Leaf },
   { href: "/goals", label: "Goals", icon: Target },

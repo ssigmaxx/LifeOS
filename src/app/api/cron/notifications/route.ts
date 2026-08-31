@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushNotification } from "@/lib/notifications/push";
 import {
   getUserHabitContext,
+  getUserTodosTodayContext,
   getUserWaterContext,
   userHasJournalEntryToday,
 } from "@/lib/notifications/admin-data";
@@ -59,7 +60,7 @@ const URL_BY_KIND: Record<ReminderKind, string> = {
   water: "/today",
   journal: "/journal",
   morning_briefing: "/today",
-  evening_review: "/journal",
+  evening_review: "/recap",
 };
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -92,8 +93,11 @@ async function buildMessage(
       });
     }
     case "evening_review": {
-      const ctx = await getUserHabitContext(admin, userId, todayISO);
-      return buildEveningReviewMessage(ctx.today);
+      const [habitCtx, todos] = await Promise.all([
+        getUserHabitContext(admin, userId, todayISO),
+        getUserTodosTodayContext(admin, userId, todayISO),
+      ]);
+      return buildEveningReviewMessage({ habits: habitCtx.today, todos });
     }
   }
 }

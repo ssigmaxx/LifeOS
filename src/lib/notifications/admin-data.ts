@@ -164,6 +164,24 @@ export async function getUserWaterContext(
   };
 }
 
+export type TodoDayCounts = { dueCount: number; completedCount: number };
+
+export async function getUserTodosTodayContext(
+  admin: AdminClient,
+  userId: string,
+  todayISO: string,
+): Promise<TodoDayCounts> {
+  const { data, error } = await admin
+    .from("todos")
+    .select("completed")
+    .eq("user_id", userId)
+    .eq("due_date", todayISO);
+  if (error) throw error;
+
+  const rows = data ?? [];
+  return { dueCount: rows.length, completedCount: rows.filter((r) => r.completed).length };
+}
+
 export async function userHasJournalEntryToday(
   admin: AdminClient,
   userId: string,

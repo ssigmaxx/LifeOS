@@ -91,14 +91,16 @@ export function buildMorningBriefingMessage({
 }
 
 export function buildEveningReviewMessage({
-  dueCount,
-  completedCount,
+  habits,
+  todos,
 }: {
-  dueCount: number;
-  completedCount: number;
+  habits: { dueCount: number; completedCount: number };
+  todos: { dueCount: number; completedCount: number };
 }): string {
-  if (dueCount === 0) return "Time for your evening review — how did today go?";
-  const remaining = dueCount - completedCount;
-  if (remaining === 0) return `All ${dueCount} habits done today. Time for your evening review.`;
-  return `${completedCount}/${dueCount} habits done today, ${remaining} left. Time for your evening review.`;
+  const parts: string[] = [];
+  if (habits.dueCount > 0) parts.push(`${habits.completedCount}/${habits.dueCount} habits`);
+  if (todos.dueCount > 0) parts.push(`${todos.completedCount}/${todos.dueCount} todos`);
+
+  if (parts.length === 0) return "Time for your daily recap — how did today go?";
+  return `${parts.join(", ")} done today. See your recap.`;
 }

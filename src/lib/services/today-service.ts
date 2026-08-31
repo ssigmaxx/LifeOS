@@ -1,7 +1,8 @@
 import "server-only";
 import { isHabitDueToday } from "@/lib/streaks";
-import { calculateDailyHabitsScore, isLogComplete } from "@/lib/habit-completion";
+import { calculateWeightedScore, getCompletionFraction, isLogComplete } from "@/lib/habit-completion";
 import { getTodayLogs, listHabits, type Habit, type TodayLogValue } from "./habit-service";
+import { getTodosDueOnDate, type TodoCompletion } from "./todo-service";
 
 export type TodayHabit = Habit & { todayLog: TodayLogValue | null };
 
@@ -10,7 +11,7 @@ export type TodaySummary = {
   dueHabits: TodayHabit[];
   completedCount: number;
   totalCount: number;
-  score: number | null; // 0-1, null when nothing is due today
+  score: number | null; // 0-1, null when nothing is due/todo today
 };
 
 function todayISO() {
@@ -20,8 +21,13 @@ function todayISO() {
 // Pure — split out from getTodaySummary so callers that already have a
 // listHabits() result (e.g. the Dashboard, which also needs the full list
 // for streaks) can derive the summary without a second round-trip through
-// listHabits()'s three queries.
-export function summarizeToday(habits: Habit[], todayLogs: Record<string, TodayLogValue>): TodaySummary {
+// listHabits()'s three queries. `todosToday` defaults to empty for callers
+// that don't need todos folded into the score.
+export function summarizeToday(
+  habits: Habit[],
+  todayLogs: Record<string, TodayLogValue>,
+  todosToday: TodoCompletion[] = [],
+): TodaySummary {
   const today = todayISO();
 
   const dueHabits: TodayHabit[] = habits
@@ -36,13 +42,12 @@ export function summarizeToday(habits: Habit[], todayLogs: Record<string, TodayL
     )
     .map((habit) => ({ ...habit, todayLog: todayLogs[habit.id] ?? null }));
 
-  const score = calculateDailyHabitsScore(
-    dueHabits.map((habit) => ({
-      trackingType: habit.trackingType,
-      scoreWeight: habit.scoreWeight,
-      log: habit.todayLog,
-    })),
-  );
+  const habitEntries = dueHabits.map((habit) => ({
+    fraction: habit.todayLog ? getCompletionFraction(habit.trackingType, habit.todayLog) : 0,
+    weight: habit.scoreWeight,
+  }));
+  const todoEntries = todosToday.map((todo) => ({ fraction: todo.completed ? 1 : 0, weight: 1 }));
+  const score = calculateWeightedScore([...habitEntries, ...todoEntries]);
 
   return {
     date: today,
@@ -56,6 +61,6 @@ export function summarizeToday(habits: Habit[], todayLogs: Record<string, TodayL
 }
 
 export async function getTodaySummary(): Promise<TodaySummary> {
-  const [habits, todayLogs] = await Promise.all([listHabits(), getTodayLogs()]);
-  return summarizeToday(habits, todayLogs);
+  const [habits, todayLogs, todosToday] = await Promise.all([listHabits(), getTodayLogs(), getTodosDueOnDate()]);
+  return summarizeToday(habits, todayLogs, todosToday);
 }
