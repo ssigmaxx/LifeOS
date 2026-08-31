@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/format";
 import type { CategoryBudgetStatus } from "@/lib/services/budget-service";
-import { SetBudgetDialog } from "./set-budget-dialog";
+import { SetWeeklyBudgetDialog } from "./set-budget-dialog";
 
 function PeriodBar({
   label,
@@ -46,13 +46,12 @@ export function BudgetCategoryRow({ status }: { status: CategoryBudgetStatus }) 
           {!hasAnyBudget ? (
             <span className="text-sm tabular-nums text-muted-foreground">{formatCurrency(status.monthSpent)}</span>
           ) : null}
-          <SetBudgetDialog
+          <SetWeeklyBudgetDialog
             category={status.category}
             label={status.label}
-            currentWeeklyAmount={status.weekBudget}
-            currentMonthlyAmount={status.monthBudget}
+            currentAmount={status.weekBudget}
             trigger={
-              <Button size="icon-sm" variant="ghost" aria-label={`Set ${status.label} budget`}>
+              <Button size="icon-sm" variant="ghost" aria-label={`Set ${status.label} weekly plan`}>
                 <Settings2 className="size-3.5" />
               </Button>
             }

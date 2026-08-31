@@ -77,16 +77,39 @@ export async function deleteBudget(category: BudgetCategory, period: BudgetPerio
   if (error) throw error;
 }
 
-/** Sets (or clears, when null) both the weekly plan and the monthly max for a category in one call. */
-export async function saveBudget(
-  category: BudgetCategory,
-  weeklyAmount: number | null,
-  monthlyAmount: number | null,
+export type MonthlyAllocation = {
+  overallAmount: number | null;
+  categoryAmounts: Partial<Record<PurchaseCategoryOption, number>>;
+};
+
+/** The current monthly plan: the overall pot plus how it's split across categories. */
+export async function getMonthlyAllocation(): Promise<MonthlyAllocation> {
+  const budgets = await listBudgets();
+  let overallAmount: number | null = null;
+  const categoryAmounts: Partial<Record<PurchaseCategoryOption, number>> = {};
+  for (const b of budgets) {
+    if (b.period !== "month") continue;
+    if (b.category === "overall") overallAmount = b.amount;
+    else categoryAmounts[b.category] = b.amount;
+  }
+  return { overallAmount, categoryAmounts };
+}
+
+/** Replaces the whole monthly plan in one go: the overall pot and every category's slice of it. */
+export async function saveMonthlyAllocation(
+  overallAmount: number | null,
+  categoryAmounts: Partial<Record<PurchaseCategoryOption, number>>,
 ): Promise<void> {
-  await Promise.all([
-    weeklyAmount != null ? upsertBudget(category, "week", weeklyAmount) : deleteBudget(category, "week"),
-    monthlyAmount != null ? upsertBudget(category, "month", monthlyAmount) : deleteBudget(category, "month"),
-  ]);
+  const writes: Promise<void>[] = [
+    overallAmount != null ? upsertBudget("overall", "month", overallAmount) : deleteBudget("overall", "month"),
+  ];
+  for (const category of Object.keys(PURCHASE_CATEGORY_LABELS) as PurchaseCategoryOption[]) {
+    const amount = categoryAmounts[category];
+    writes.push(
+      amount != null && amount > 0 ? upsertBudget(category, "month", amount) : deleteBudget(category, "month"),
+    );
+  }
+  await Promise.all(writes);
 }
 
 export type CategoryBudgetStatus = {

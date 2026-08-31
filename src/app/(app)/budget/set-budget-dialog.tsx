@@ -14,26 +14,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { BudgetCategory } from "@/lib/services/budget-service";
-import { saveBudgetAction, type FormActionState } from "./actions";
+import { saveWeeklyBudgetAction, type FormActionState } from "./actions";
 
 const initialState: FormActionState = { error: null };
 
-export function SetBudgetDialog({
+export function SetWeeklyBudgetDialog({
   trigger,
   category,
   label,
-  currentWeeklyAmount,
-  currentMonthlyAmount,
+  currentAmount,
 }: {
   trigger: ReactNode;
   category: BudgetCategory;
   label: string;
-  currentWeeklyAmount: number | null;
-  currentMonthlyAmount: number | null;
+  currentAmount: number | null;
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(async (_prev: FormActionState, formData: FormData) => {
-    const result = await saveBudgetAction(Object.fromEntries(formData));
+    const result = await saveWeeklyBudgetAction(Object.fromEntries(formData));
     if (!result.error) setOpen(false);
     return result;
   }, initialState);
@@ -43,10 +41,10 @@ export function SetBudgetDialog({
       <DialogTrigger render={trigger as React.ReactElement} />
       <DialogContent className="sm:max-w-xs">
         <DialogHeader>
-          <DialogTitle>{label} budget</DialogTitle>
+          <DialogTitle>{label} — weekly plan</DialogTitle>
           <DialogDescription>
-            A weekly plan for what you mean to spend, and a monthly max you don&apos;t want to cross. Leave either
-            blank to skip it.
+            What you mean to spend on {label.toLowerCase()} each week. Leave blank to skip it — the monthly max is
+            set from &ldquo;Plan month&rdquo;.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -57,26 +55,15 @@ export function SetBudgetDialog({
           className="space-y-4"
         >
           <div className="space-y-2">
-            <Label htmlFor="weeklyAmount">Planned weekly (EUR)</Label>
+            <Label htmlFor="amount">Planned weekly (EUR)</Label>
             <Input
-              id="weeklyAmount"
-              name="weeklyAmount"
+              id="amount"
+              name="amount"
               type="number"
               step="any"
               min={0}
-              defaultValue={currentWeeklyAmount ?? ""}
+              defaultValue={currentAmount ?? ""}
               autoFocus
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="monthlyAmount">Max monthly (EUR)</Label>
-            <Input
-              id="monthlyAmount"
-              name="monthlyAmount"
-              type="number"
-              step="any"
-              min={0}
-              defaultValue={currentMonthlyAmount ?? ""}
             />
           </div>
           {state.error ? (
