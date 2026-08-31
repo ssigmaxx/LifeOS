@@ -5,7 +5,6 @@ import { Apple, Check, ListChecks, Target, TriangleAlert, UtensilsCrossed, X } f
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { WEEKDAY_LABELS, TRACKING_TYPE_LABELS } from "@/lib/habit-constants";
-import { METRIC_LABELS, FREQUENCY_LABELS } from "@/lib/goal-constants";
 import type { Proposal } from "@/lib/ai/types";
 import {
   confirmGoalProposalAction,
@@ -116,9 +115,16 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
           <div className="space-y-1 text-sm">
             <p className="font-medium">{proposal.name}</p>
             {proposal.description ? <p className="text-muted-foreground">{proposal.description}</p> : null}
-            <p className="text-xs text-muted-foreground">
-              {METRIC_LABELS[proposal.metricType]} · target {proposal.targetValue} · {FREQUENCY_LABELS[proposal.frequency]}
-            </p>
+            {proposal.targetDate ? (
+              <p className="text-xs text-muted-foreground">Target: {proposal.targetDate}</p>
+            ) : null}
+            {proposal.milestones && proposal.milestones.length > 0 ? (
+              <ul className="list-inside list-disc text-xs text-muted-foreground">
+                {proposal.milestones.map((m, i) => (
+                  <li key={i}>{m}</li>
+                ))}
+              </ul>
+            ) : null}
           </div>
         ) : null}
 

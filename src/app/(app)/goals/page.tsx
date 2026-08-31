@@ -32,7 +32,7 @@ export default async function GoalsPage() {
         <EmptyState
           icon={Target}
           title="No goals yet"
-          description="Set a target for water, sleep, meditation, gym, or fasting."
+          description="Set a goal, then break it into milestones you check off as you go."
         />
       ) : (
         <div className="space-y-6">

@@ -1,6 +1,4 @@
 import type { TrackingType } from "@/lib/habit-completion";
-import type { GoalFrequency } from "@/lib/goal-progress";
-import type { GoalMetricType } from "@/lib/services/goal-service";
 import type { ActivityLevel, BmiCategory, NutritionGoal, Sex } from "@/lib/nutrition-calc";
 import type { FoodSource, MealType } from "@/lib/services/nutrition-service";
 
@@ -19,9 +17,8 @@ export type GoalProposal = {
   kind: "goal";
   name: string;
   description?: string;
-  metricType: GoalMetricType;
-  targetValue: number;
-  frequency: GoalFrequency;
+  targetDate?: string;
+  milestones?: string[];
 };
 
 export type NutritionProfileProposal = {

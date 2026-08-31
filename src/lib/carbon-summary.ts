@@ -1,7 +1,7 @@
 // Pure carbon-footprint aggregation math. Kept dependency-free (no DB) so
 // it's cheap to unit test — carbon-service.ts is responsible for loading
 // the raw activity rows and calling this to build the summary the page
-// renders. Mirrors the split used by goal-progress.ts / stats.ts.
+// renders. Mirrors the split used by stats.ts.
 
 export type CarbonCategory = "food" | "travel" | "energy" | "shopping";
 

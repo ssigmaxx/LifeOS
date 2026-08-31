@@ -1,7 +1,10 @@
+import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { EmptyState } from "@/components/empty-state";
 import { getTodayEntries, listJournalEntries } from "@/lib/services/journal-service";
+import { listGoals } from "@/lib/services/goal-service";
 import { JournalCard } from "@/app/(app)/today/journal-card";
 import { SearchForm } from "./search-form";
 import { EntryCard } from "./entry-card";
@@ -21,10 +24,12 @@ export default async function JournalPage({
   searchParams: Promise<{ search?: string }>;
 }) {
   const { search } = await searchParams;
-  const [today, entries] = await Promise.all([
+  const [today, entries, goals] = await Promise.all([
     getTodayEntries(),
     listJournalEntries({ search }),
+    listGoals(),
   ]);
+  const activeGoals = goals.filter((g) => g.status === "active");
 
   const groups = new Map<string, typeof entries>();
   for (const entry of entries) {
@@ -43,6 +48,33 @@ export default async function JournalPage({
       </div>
 
       <JournalCard morning={today.morning} evening={today.evening} />
+
+      {activeGoals.length > 0 ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-muted-foreground">Your active goals</h2>
+            <Link href="/goals" className="text-xs text-muted-foreground hover:underline">
+              View goals
+            </Link>
+          </div>
+          <Card>
+            <CardContent className="space-y-3 py-4">
+              {activeGoals.map((g) => {
+                const pct = Math.round(g.progressRatio * 100);
+                return (
+                  <div key={g.id} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">{g.name}</span>
+                      <span className="text-muted-foreground">{pct}%</span>
+                    </div>
+                    <Progress value={pct} />
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
 
       <div className="space-y-3">
         <SearchForm defaultValue={search ?? ""} />

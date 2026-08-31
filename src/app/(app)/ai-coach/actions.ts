@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createHabit } from "@/lib/services/habit-service";
-import { createGoal } from "@/lib/services/goal-service";
+import { addMilestone, createGoal } from "@/lib/services/goal-service";
 import { habitFormSchema } from "@/lib/validations/habit";
 import { goalFormSchema } from "@/lib/validations/goal";
 import { nutritionProfileInputSchema, mealLogConfirmSchema } from "@/lib/validations/nutrition";
@@ -129,22 +129,23 @@ export async function confirmGoalProposalAction(proposal: GoalProposal): Promise
   const parsed = goalFormSchema.safeParse({
     name: proposal.name,
     description: proposal.description,
-    metricType: proposal.metricType,
-    targetValue: proposal.targetValue,
-    frequency: proposal.frequency,
-    startDate: todayISO(),
+    targetDate: proposal.targetDate,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid goal proposal." };
   }
 
   try {
-    await createGoal(parsed.data);
+    const goalId = await createGoal(parsed.data);
+    for (const title of proposal.milestones ?? []) {
+      await addMilestone(goalId, title);
+    }
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to create goal." };
   }
 
   revalidatePath("/goals");
+  revalidatePath("/journal");
   return { error: null };
 }
 

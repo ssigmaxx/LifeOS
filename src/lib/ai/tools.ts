@@ -130,25 +130,20 @@ export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   {
     name: "propose_create_goal",
     description:
-      "Draft a new goal for the user to review and confirm. This never creates anything directly — it only prepares a proposal shown in the UI.",
+      "Draft a new goal for the user to review and confirm. Goals are free-form (any name/description) and track progress via milestones the user checks off — not an auto-tracked metric. This never creates anything directly — it only prepares a proposal shown in the UI.",
     parametersJsonSchema: {
       type: "object",
       properties: {
         name: { type: "string" },
         description: { type: "string" },
-        metricType: {
-          type: "string",
-          enum: ["water_ml", "meditation_minutes", "gym_sessions", "sleep_hours", "fasting_hours"],
-        },
-        targetValue: { type: "number" },
-        frequency: {
-          type: "string",
-          enum: ["daily", "weekly", "average"],
-          description:
-            "daily = hit the target every day, weekly = a count of qualifying days per week, average = a running average.",
+        targetDate: { type: "string", description: "Optional target date, YYYY-MM-DD." },
+        milestones: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional list of milestone titles to pre-populate, e.g. broken-down steps toward the goal.",
         },
       },
-      required: ["name", "metricType", "targetValue", "frequency"],
+      required: ["name"],
     },
   },
   {
@@ -404,11 +399,12 @@ export const TOOL_EXECUTORS: Record<string, ToolExecutor> = {
     return {
       forModel: goals.map((g) => ({
         name: g.name,
-        metricType: g.metricType,
-        targetValue: g.targetValue,
-        frequency: g.frequency,
+        description: g.description,
+        targetDate: g.targetDate,
         status: g.status,
-        progressPercent: Math.round(Math.min(g.progressRatio, 1) * 100),
+        milestonesCompleted: g.milestonesCompleted,
+        milestonesTotal: g.milestonesTotal,
+        progressPercent: Math.round(g.progressRatio * 100),
       })),
     };
   },
@@ -447,23 +443,22 @@ export const TOOL_EXECUTORS: Record<string, ToolExecutor> = {
     const parsed = goalFormSchema.safeParse({
       name: args.name,
       description: args.description,
-      metricType: args.metricType,
-      targetValue: args.targetValue,
-      frequency: args.frequency,
-      startDate: todayISO(),
+      targetDate: args.targetDate,
     });
     if (!parsed.success) {
       return { forModel: { error: parsed.error.issues[0]?.message ?? "Invalid goal proposal." } };
     }
+    const milestones = Array.isArray(args.milestones)
+      ? args.milestones.filter((m): m is string => typeof m === "string" && m.trim().length > 0)
+      : undefined;
     return {
       forModel: { status: "drafted", summary: `Drafted goal "${parsed.data.name}" for the user to review.` },
       proposal: {
         kind: "goal",
         name: parsed.data.name,
         description: parsed.data.description,
-        metricType: parsed.data.metricType,
-        targetValue: parsed.data.targetValue,
-        frequency: parsed.data.frequency,
+        targetDate: parsed.data.targetDate,
+        milestones,
       },
     };
   },
