@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { GitMerge, Trash2 } from "lucide-react";
+import { useActionState, useState, useTransition } from "react";
+import { GitMerge, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -15,8 +17,73 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DEFAULT_CALENDAR_COLOR } from "@/lib/calendar-constants";
 import type { Calendar } from "@/lib/services/calendar-service";
-import { deleteCalendarAction, mergeCalendarsAction } from "./actions";
+import { createCalendarAction, deleteCalendarAction, mergeCalendarsAction, type FormActionState } from "./actions";
+import { ColorSwatchPicker } from "./color-swatch-picker";
+
+const initialCreateState: FormActionState = { error: null };
+
+function NewCalendarForm() {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [color, setColor] = useState<string>(DEFAULT_CALENDAR_COLOR);
+  const [state, formAction, isPending] = useActionState(
+    async (_prev: FormActionState, formData: FormData) => {
+      const result = await createCalendarAction(Object.fromEntries(formData));
+      if (!result.error) {
+        setOpen(false);
+        setName("");
+        setColor(DEFAULT_CALENDAR_COLOR);
+      }
+      return result;
+    },
+    initialCreateState,
+  );
+
+  if (!open) {
+    return (
+      <Button size="sm" variant="outline" className="w-full" onClick={() => setOpen(true)}>
+        <Plus className="size-4" /> New calendar
+      </Button>
+    );
+  }
+
+  return (
+    <form action={formAction} className="space-y-3 rounded-lg border p-3">
+      <div className="space-y-2">
+        <Label htmlFor="newCalendarName">Name</Label>
+        <Input
+          id="newCalendarName"
+          name="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Uni schedule"
+          maxLength={100}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Color</Label>
+        <ColorSwatchPicker value={color} onChange={setColor} />
+        <input type="hidden" name="color" value={color} />
+      </div>
+      {state.error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {state.error}
+        </p>
+      ) : null}
+      <div className="flex justify-end gap-2">
+        <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+        <Button type="submit" size="sm" disabled={isPending}>
+          {isPending ? "Creating…" : "Create"}
+        </Button>
+      </div>
+    </form>
+  );
+}
 
 function CalendarRow({ calendar, others }: { calendar: Calendar; others: Calendar[] }) {
   const [targetId, setTargetId] = useState<string>(others[0]?.id ?? "");
@@ -151,14 +218,17 @@ export function ManageCalendarsDialog({
               : "Events you create or import are organized into calendars."}
           </DialogDescription>
         </DialogHeader>
-        <div className="divide-y">
-          {calendars.map((calendar) => (
-            <CalendarRow
-              key={calendar.id}
-              calendar={calendar}
-              others={calendars.filter((c) => c.id !== calendar.id)}
-            />
-          ))}
+        <div className="space-y-3">
+          <NewCalendarForm />
+          <div className="divide-y">
+            {calendars.map((calendar) => (
+              <CalendarRow
+                key={calendar.id}
+                calendar={calendar}
+                others={calendars.filter((c) => c.id !== calendar.id)}
+              />
+            ))}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -1,15 +1,21 @@
-// A small fixed palette rather than a free color picker, matching the
+// A curated swatch grid rather than a free-form color wheel, matching the
 // app's restrained design system elsewhere (see the artifact-design /
-// simplification pass — no ad hoc colors).
+// simplification pass — no ad hoc colors) — but drawn from Apple Calendar's
+// own system palette (the same named colors iOS/macOS Calendar offers when
+// you create or recolor a calendar) so there's real range to choose from.
 export const CALENDAR_COLOR_PALETTE = [
-  "#ef4444", // red
-  "#f97316", // orange
-  "#eab308", // yellow
-  "#22c55e", // green
-  "#06b6d4", // cyan
-  "#3b82f6", // blue
-  "#a855f7", // purple
-  "#ec4899", // pink
+  "#ff3b30", // red
+  "#ff9500", // orange
+  "#ffcc00", // yellow
+  "#34c759", // green
+  "#00c7be", // mint
+  "#30b0c7", // teal
+  "#32ade6", // cyan
+  "#007aff", // blue
+  "#5856d6", // indigo
+  "#af52de", // purple
+  "#ff2d55", // pink
+  "#a2845e", // brown
 ] as const;
 
-export const DEFAULT_CALENDAR_COLOR: string = CALENDAR_COLOR_PALETTE[5];
+export const DEFAULT_CALENDAR_COLOR: string = CALENDAR_COLOR_PALETTE[7];

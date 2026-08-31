@@ -15,10 +15,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import { CALENDAR_COLOR_PALETTE } from "@/lib/calendar-constants";
 import type { Calendar } from "@/lib/services/calendar-service";
 import { importIcsAction, type ImportIcsState } from "./actions";
+import { ColorSwatchPicker } from "./color-swatch-picker";
 
 const initialState: ImportIcsState = { error: null, importedCount: null };
 
@@ -71,21 +71,7 @@ export function IcsImportDialog({ trigger, calendars }: { trigger: ReactNode; ca
               </div>
               <div className="space-y-2">
                 <Label>Color</Label>
-                <div className="flex flex-wrap gap-2">
-                  {CALENDAR_COLOR_PALETTE.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setNewColor(color)}
-                      aria-label={color}
-                      className={cn(
-                        "size-7 rounded-full border-2 transition-transform",
-                        newColor === color ? "scale-110 border-foreground" : "border-transparent",
-                      )}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
+                <ColorSwatchPicker value={newColor} onChange={setNewColor} />
                 <input type="hidden" name="newCalendarColor" value={newColor} />
               </div>
             </div>
