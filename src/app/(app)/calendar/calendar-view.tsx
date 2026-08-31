@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import type { EventApi, EventClickInfo, EventDropInfo, EventInput, EventResizeDoneInfo } from "@fullcalendar/react";
+import { useCallback, useMemo, useState } from "react";
+import type {
+  DateSelectInfo,
+  EventApi,
+  EventClickInfo,
+  EventDropInfo,
+  EventInput,
+  EventResizeDoneInfo,
+  EventSourceFuncInfo,
+} from "@fullcalendar/react";
 import { EventCalendar } from "@/registry/components/event-calendar";
 import type { Calendar, CalendarEvent } from "@/lib/services/calendar-service";
-import { listEventsForRangeAction, updateEventTimesAction } from "./actions";
+import { updateEventTimesAction } from "./actions";
 import { EventFormDialog } from "./event-form-dialog";
 import { EventDetailDialog } from "./event-detail-dialog";
 
@@ -51,6 +59,14 @@ function fromEventApi(event: EventApi): CalendarEvent {
   };
 }
 
+async function persistTimeChange(id: string, start: Date, end: Date | null, revert: () => void) {
+  try {
+    await updateEventTimesAction(id, start.toISOString(), end ? end.toISOString() : null);
+  } catch {
+    revert();
+  }
+}
+
 export function CalendarView({ calendars }: { calendars: Calendar[] }) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -59,13 +75,60 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
   const [draftEnd, setDraftEnd] = useState<string | undefined>(undefined);
   const [draftAllDay, setDraftAllDay] = useState(false);
 
-  async function persistTimeChange(id: string, start: Date, end: Date | null, revert: () => void) {
-    try {
-      await updateEventTimesAction(id, start.toISOString(), end ? end.toISOString() : null);
-    } catch {
-      revert();
-    }
-  }
+  // A plain fetch to a Route Handler, not a Server Action — FullCalendar
+  // invokes this itself during its own mount lifecycle, and Next.js
+  // forbids calling a Server Action during a Client Component's initial
+  // render (see src/app/api/calendar/events/route.ts for the full story).
+  // Also wrapped in useCallback: FullCalendar treats a new `events`
+  // function reference as "the source changed" and refetches, so an
+  // inline arrow function here would refetch on every render.
+  const events = useCallback(async (info: EventSourceFuncInfo) => {
+    // Node's fetch (unlike a browser's) can't resolve a relative URL, and
+    // this callback can fire once during the server-executed initial
+    // render pass of this "use client" tree before hydration — skip that
+    // pass and let FullCalendar's real client-side call (which does have
+    // a browser location to resolve against) fetch the actual data.
+    if (typeof window === "undefined") return [];
+
+    const params = new URLSearchParams({ start: info.startStr, end: info.endStr });
+    const response = await fetch(`/api/calendar/events?${params}`);
+    if (!response.ok) throw new Error("Failed to load events");
+    const events: CalendarEvent[] = await response.json();
+    return events.map(toEventInput);
+  }, []);
+
+  const handleEventClick = useCallback((info: EventClickInfo) => {
+    setSelectedEvent(fromEventApi(info.event));
+    setDetailOpen(true);
+  }, []);
+
+  const handleSelect = useCallback((info: DateSelectInfo) => {
+    setDraftStart(info.start.toISOString());
+    setDraftEnd(info.end.toISOString());
+    setDraftAllDay(info.allDay);
+    setFormOpen(true);
+  }, []);
+
+  const handleEventDrop = useCallback((info: EventDropInfo) => {
+    persistTimeChange(info.event.id, info.event.start!, info.event.end, () => info.revert());
+  }, []);
+
+  const handleEventResize = useCallback((info: EventResizeDoneInfo) => {
+    persistTimeChange(info.event.id, info.event.start!, info.event.end, () => info.revert());
+  }, []);
+
+  const addButton = useMemo(
+    () => ({
+      text: "Event",
+      click: () => {
+        setDraftStart(undefined);
+        setDraftEnd(undefined);
+        setDraftAllDay(false);
+        setFormOpen(true);
+      },
+    }),
+    [],
+  );
 
   return (
     <>
@@ -77,36 +140,12 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
         editable
         selectable
         availableViews={["dayGridMonth", "timeGridWeek", "timeGridDay"]}
-        addButton={{
-          text: "Event",
-          click: () => {
-            setDraftStart(undefined);
-            setDraftEnd(undefined);
-            setDraftAllDay(false);
-            setFormOpen(true);
-          },
-        }}
-        events={(fetchInfo, successCallback, failureCallback) => {
-          listEventsForRangeAction(fetchInfo.startStr, fetchInfo.endStr)
-            .then((events) => successCallback(events.map(toEventInput)))
-            .catch(failureCallback);
-        }}
-        eventClick={(info: EventClickInfo) => {
-          setSelectedEvent(fromEventApi(info.event));
-          setDetailOpen(true);
-        }}
-        select={(info) => {
-          setDraftStart(info.start.toISOString());
-          setDraftEnd(info.end.toISOString());
-          setDraftAllDay(info.allDay);
-          setFormOpen(true);
-        }}
-        eventDrop={(info: EventDropInfo) => {
-          persistTimeChange(info.event.id, info.event.start!, info.event.end, () => info.revert());
-        }}
-        eventResize={(info: EventResizeDoneInfo) => {
-          persistTimeChange(info.event.id, info.event.start!, info.event.end, () => info.revert());
-        }}
+        addButton={addButton}
+        events={events}
+        eventClick={handleEventClick}
+        select={handleSelect}
+        eventDrop={handleEventDrop}
+        eventResize={handleEventResize}
       />
 
       <EventFormDialog

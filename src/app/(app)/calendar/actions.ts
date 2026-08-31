@@ -5,22 +5,17 @@ import {
   countEventsInSeries,
   createCalendar,
   createEvent,
+  deleteCalendar,
   deleteEvent,
   deleteEventSeries,
   ensureDefaultCalendar,
   importIcsEvents,
-  listEventsForRange,
   mergeCalendars,
   updateEventTimes,
-  type CalendarEvent,
 } from "@/lib/services/calendar-service";
 import { calendarInputSchema, eventInputSchema, mergeCalendarsInputSchema } from "@/lib/validations/calendar";
 
 export type FormActionState = { error: string | null };
-
-export async function listEventsForRangeAction(startISO: string, endISO: string): Promise<CalendarEvent[]> {
-  return listEventsForRange(startISO, endISO);
-}
 
 export async function createEventAction(input: unknown): Promise<FormActionState> {
   const parsed = eventInputSchema.safeParse(input);
@@ -81,6 +76,11 @@ export async function mergeCalendarsAction(input: unknown): Promise<FormActionSt
   }
   revalidatePath("/calendar");
   return { error: null };
+}
+
+export async function deleteCalendarAction(id: string) {
+  await deleteCalendar(id);
+  revalidatePath("/calendar");
 }
 
 export type ImportIcsState = { error: string | null; importedCount: number | null };
