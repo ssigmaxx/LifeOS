@@ -21,10 +21,34 @@ import { createEventAction, type FormActionState } from "./actions";
 
 const initialState: FormActionState = { error: null };
 
-export function EventFormDialog({ trigger, calendars }: { trigger: ReactNode; calendars: Calendar[] }) {
-  const [open, setOpen] = useState(false);
+// "YYYY-MM-DDTHH:MM" for a datetime-local input's defaultValue, or
+// "YYYY-MM-DD" for a date input when isAllDay.
+function toInputValue(iso: string, isAllDay: boolean): string {
+  return isAllDay ? iso.slice(0, 10) : iso.slice(0, 16);
+}
+
+export function EventFormDialog({
+  trigger,
+  calendars,
+  open: openProp,
+  onOpenChange,
+  defaultStartAt,
+  defaultEndAt,
+  defaultIsAllDay = false,
+}: {
+  trigger?: ReactNode;
+  calendars: Calendar[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultStartAt?: string;
+  defaultEndAt?: string;
+  defaultIsAllDay?: boolean;
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [calendarId, setCalendarId] = useState(calendars[0]?.id ?? "");
-  const [isAllDay, setIsAllDay] = useState(false);
+  const [isAllDay, setIsAllDay] = useState(defaultIsAllDay);
   const [state, formAction, isPending] = useActionState(
     async (_prev: FormActionState, formData: FormData) => {
       const result = await createEventAction(Object.fromEntries(formData));
@@ -36,7 +60,7 @@ export function EventFormDialog({ trigger, calendars }: { trigger: ReactNode; ca
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={trigger as React.ReactElement} />
+      {trigger ? <DialogTrigger render={trigger as React.ReactElement} /> : null}
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New event</DialogTitle>
@@ -81,11 +105,22 @@ export function EventFormDialog({ trigger, calendars }: { trigger: ReactNode; ca
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="startAt">Start</Label>
-              <Input id="startAt" name="startAt" type={isAllDay ? "date" : "datetime-local"} required />
+              <Input
+                id="startAt"
+                name="startAt"
+                type={isAllDay ? "date" : "datetime-local"}
+                defaultValue={defaultStartAt ? toInputValue(defaultStartAt, isAllDay) : undefined}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="endAt">End (optional)</Label>
-              <Input id="endAt" name="endAt" type={isAllDay ? "date" : "datetime-local"} />
+              <Input
+                id="endAt"
+                name="endAt"
+                type={isAllDay ? "date" : "datetime-local"}
+                defaultValue={defaultEndAt ? toInputValue(defaultEndAt, isAllDay) : undefined}
+              />
             </div>
           </div>
 

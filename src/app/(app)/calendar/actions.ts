@@ -1,20 +1,25 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getDayDetail, type DayDetail } from "@/lib/services/analytics-service";
 import {
+  countEventsInSeries,
   createCalendar,
   createEvent,
   deleteEvent,
+  deleteEventSeries,
   ensureDefaultCalendar,
   importIcsEvents,
+  listEventsForRange,
+  mergeCalendars,
+  updateEventTimes,
+  type CalendarEvent,
 } from "@/lib/services/calendar-service";
-import { calendarInputSchema, eventInputSchema } from "@/lib/validations/calendar";
+import { calendarInputSchema, eventInputSchema, mergeCalendarsInputSchema } from "@/lib/validations/calendar";
 
 export type FormActionState = { error: string | null };
 
-export async function getDayDetailAction(date: string): Promise<DayDetail> {
-  return getDayDetail(date);
+export async function listEventsForRangeAction(startISO: string, endISO: string): Promise<CalendarEvent[]> {
+  return listEventsForRange(startISO, endISO);
 }
 
 export async function createEventAction(input: unknown): Promise<FormActionState> {
@@ -31,8 +36,22 @@ export async function createEventAction(input: unknown): Promise<FormActionState
   return { error: null };
 }
 
+export async function updateEventTimesAction(id: string, startAt: string, endAt: string | null) {
+  await updateEventTimes(id, startAt, endAt);
+  revalidatePath("/calendar");
+}
+
 export async function deleteEventAction(id: string) {
   await deleteEvent(id);
+  revalidatePath("/calendar");
+}
+
+export async function countEventsInSeriesAction(recurrenceGroupId: string): Promise<number> {
+  return countEventsInSeries(recurrenceGroupId);
+}
+
+export async function deleteEventSeriesAction(recurrenceGroupId: string) {
+  await deleteEventSeries(recurrenceGroupId);
   revalidatePath("/calendar");
 }
 
@@ -45,6 +64,20 @@ export async function createCalendarAction(input: unknown): Promise<FormActionSt
     await createCalendar(parsed.data);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to create calendar." };
+  }
+  revalidatePath("/calendar");
+  return { error: null };
+}
+
+export async function mergeCalendarsAction(input: unknown): Promise<FormActionState> {
+  const parsed = mergeCalendarsInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid selection." };
+  }
+  try {
+    await mergeCalendars(parsed.data.sourceId, parsed.data.targetId);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to merge calendars." };
   }
   revalidatePath("/calendar");
   return { error: null };

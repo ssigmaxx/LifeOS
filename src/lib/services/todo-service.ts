@@ -106,45 +106,6 @@ export async function getTodosDueOnDate(date: string = todayISO()): Promise<Todo
   return data;
 }
 
-// Used by the Calendar day-detail view, which needs id/title too, not just
-// the completion flag getTodosDueOnDate returns for scoring purposes.
-export async function listTodosDueOnDateWithId(
-  date: string = todayISO(),
-): Promise<{ id: string; title: string; completed: boolean }[]> {
-  const { supabase, userId } = await requireUserId();
-  const { data, error } = await supabase
-    .from("todos")
-    .select("id, title, completed")
-    .eq("user_id", userId)
-    .eq("due_date", date);
-  if (error) throw error;
-  return data;
-}
-
-// Used by the Calendar week view, which needs id/title per day, not just
-// the completion flag getTodosDueInRange returns for scoring purposes.
-export async function listTodosDueInRangeWithId(
-  startDate: string,
-  endDate: string,
-): Promise<Map<string, { id: string; title: string; completed: boolean }[]>> {
-  const { supabase, userId } = await requireUserId();
-  const { data, error } = await supabase
-    .from("todos")
-    .select("id, title, due_date, completed")
-    .eq("user_id", userId)
-    .gte("due_date", startDate)
-    .lte("due_date", endDate);
-  if (error) throw error;
-
-  const byDate = new Map<string, { id: string; title: string; completed: boolean }[]>();
-  for (const row of data) {
-    const list = byDate.get(row.due_date!) ?? [];
-    list.push({ id: row.id, title: row.title, completed: row.completed });
-    byDate.set(row.due_date!, list);
-  }
-  return byDate;
-}
-
 // Used by analytics-service.ts's date-range score series — one query
 // instead of one per day.
 export async function getTodosDueInRange(

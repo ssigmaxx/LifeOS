@@ -8,6 +8,18 @@ export const calendarInputSchema = z.object({
 
 export type CalendarInput = z.infer<typeof calendarInputSchema>;
 
+export const mergeCalendarsInputSchema = z
+  .object({
+    sourceId: z.string().min(1),
+    targetId: z.string().min(1),
+  })
+  .refine((data) => data.sourceId !== data.targetId, {
+    message: "Pick two different calendars.",
+    path: ["targetId"],
+  });
+
+export type MergeCalendarsInput = z.infer<typeof mergeCalendarsInputSchema>;
+
 // datetime-local inputs come as "YYYY-MM-DDTHH:MM" with no timezone —
 // treated as a literal UTC-equivalent instant, same documented
 // simplification as src/lib/ics.ts's non-VTIMEZONE handling.
