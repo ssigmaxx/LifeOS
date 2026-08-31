@@ -162,3 +162,68 @@ export async function deleteMilestone(id: string): Promise<void> {
   const { error } = await supabase.from("goal_milestones").delete().eq("id", id);
   if (error) throw error;
 }
+
+export type GoalCalendarEvent = {
+  /** "milestone" = a completed milestone, shown on its completion date.
+   *  "target" = an active goal's target date, shown as a deadline marker. */
+  kind: "milestone" | "target";
+  id: string;
+  title: string;
+  /** ISO date or datetime — all-day either way. */
+  date: string;
+  goalId: string;
+  goalName: string;
+};
+
+// Read-only calendar layer derived from goal data — not stored as its own
+// events, just surfaced so completed milestones and goal deadlines show up
+// alongside real calendar events. See /api/calendar/goal-events.
+export async function listGoalCalendarEvents(startISO: string, endISO: string): Promise<GoalCalendarEvent[]> {
+  const { supabase, userId } = await requireUserId();
+  const startDate = startISO.slice(0, 10);
+  const endDate = endISO.slice(0, 10);
+
+  const [{ data: milestoneRows, error: milestonesError }, { data: goalRows, error: goalsError }] =
+    await Promise.all([
+      supabase
+        .from("goal_milestones")
+        .select("id, title, completed_at, goal_id, goals(name)")
+        .eq("user_id", userId)
+        .eq("completed", true)
+        .gte("completed_at", startISO)
+        .lte("completed_at", endISO),
+      supabase
+        .from("goals")
+        .select("id, name, target_date")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .not("target_date", "is", null)
+        .gte("target_date", startDate)
+        .lte("target_date", endDate),
+    ]);
+  if (milestonesError) throw milestonesError;
+  if (goalsError) throw goalsError;
+
+  const milestoneEvents: GoalCalendarEvent[] = milestoneRows.map((row) => {
+    const goal = Array.isArray(row.goals) ? row.goals[0] : row.goals;
+    return {
+      kind: "milestone",
+      id: row.id,
+      title: row.title,
+      date: row.completed_at!,
+      goalId: row.goal_id,
+      goalName: goal?.name ?? "Goal",
+    };
+  });
+
+  const targetEvents: GoalCalendarEvent[] = goalRows.map((row) => ({
+    kind: "target",
+    id: row.id,
+    title: row.name,
+    date: row.target_date!,
+    goalId: row.id,
+    goalName: row.name,
+  }));
+
+  return [...milestoneEvents, ...targetEvents];
+}

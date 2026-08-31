@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Settings2 } from "lucide-react";
 import type { Calendar } from "@/lib/services/calendar-service";
+import { GOAL_EVENT_COLOR } from "@/lib/calendar-constants";
 import { ManageCalendarsDialog } from "./manage-calendars-dialog";
 
 export function CalendarLegend({ calendars }: { calendars: Calendar[] }) {
@@ -21,6 +22,10 @@ export function CalendarLegend({ calendars }: { calendars: Calendar[] }) {
             {c.name}
           </span>
         ))}
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: GOAL_EVENT_COLOR }} />
+          Goals
+        </span>
         <Settings2 className="size-3.5 shrink-0" />
       </button>
       <ManageCalendarsDialog calendars={calendars} open={open} onOpenChange={setOpen} />

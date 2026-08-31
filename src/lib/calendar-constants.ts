@@ -19,3 +19,8 @@ export const CALENDAR_COLOR_PALETTE = [
 ] as const;
 
 export const DEFAULT_CALENDAR_COLOR: string = CALENDAR_COLOR_PALETTE[7];
+
+// Deliberately not in CALENDAR_COLOR_PALETTE above — a muted gold reads as
+// "derived/informational" rather than "just another calendar you can pick",
+// since goal milestones and target dates aren't real editable events.
+export const GOAL_EVENT_COLOR = "#c9a227";

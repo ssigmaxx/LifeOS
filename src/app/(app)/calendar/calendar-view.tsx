@@ -12,9 +12,12 @@ import type {
 } from "@fullcalendar/react";
 import { EventCalendar } from "@/registry/components/event-calendar";
 import type { Calendar, CalendarEvent } from "@/lib/services/calendar-service";
+import type { GoalCalendarEvent } from "@/lib/services/goal-service";
+import { GOAL_EVENT_COLOR } from "@/lib/calendar-constants";
 import { updateEventTimesAction } from "./actions";
 import { EventFormDialog } from "./event-form-dialog";
 import { EventDetailDialog } from "./event-detail-dialog";
+import { GoalEventDialog } from "./goal-event-dialog";
 
 function toEventInput(event: CalendarEvent): EventInput {
   return {
@@ -32,6 +35,18 @@ function toEventInput(event: CalendarEvent): EventInput {
       description: event.description,
       recurrenceGroupId: event.recurrenceGroupId,
     },
+  };
+}
+
+function toGoalEventInput(event: GoalCalendarEvent): EventInput {
+  return {
+    id: `goal-${event.kind}-${event.id}`,
+    title: event.kind === "milestone" ? `✓ ${event.title}` : `🎯 ${event.title}`,
+    start: event.date,
+    allDay: true,
+    editable: false,
+    color: GOAL_EVENT_COLOR,
+    extendedProps: { source: "goal", goalEvent: event },
   };
 }
 
@@ -70,12 +85,14 @@ async function persistTimeChange(id: string, start: Date, end: Date | null, reve
 export function CalendarView({ calendars }: { calendars: Calendar[] }) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedGoalEvent, setSelectedGoalEvent] = useState<GoalCalendarEvent | null>(null);
+  const [goalDetailOpen, setGoalDetailOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [draftStart, setDraftStart] = useState<string | undefined>(undefined);
   const [draftEnd, setDraftEnd] = useState<string | undefined>(undefined);
   const [draftAllDay, setDraftAllDay] = useState(false);
 
-  // A plain fetch to a Route Handler, not a Server Action — FullCalendar
+  // A plain fetch to Route Handlers, not Server Actions — FullCalendar
   // invokes this itself during its own mount lifecycle, and Next.js
   // forbids calling a Server Action during a Client Component's initial
   // render (see src/app/api/calendar/events/route.ts for the full story).
@@ -91,13 +108,22 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
     if (typeof window === "undefined") return [];
 
     const params = new URLSearchParams({ start: info.startStr, end: info.endStr });
-    const response = await fetch(`/api/calendar/events?${params}`);
-    if (!response.ok) throw new Error("Failed to load events");
-    const events: CalendarEvent[] = await response.json();
-    return events.map(toEventInput);
+    const [eventsResponse, goalEventsResponse] = await Promise.all([
+      fetch(`/api/calendar/events?${params}`),
+      fetch(`/api/calendar/goal-events?${params}`),
+    ]);
+    if (!eventsResponse.ok) throw new Error("Failed to load events");
+    const events: CalendarEvent[] = await eventsResponse.json();
+    const goalEvents: GoalCalendarEvent[] = goalEventsResponse.ok ? await goalEventsResponse.json() : [];
+    return [...events.map(toEventInput), ...goalEvents.map(toGoalEventInput)];
   }, []);
 
   const handleEventClick = useCallback((info: EventClickInfo) => {
+    if (info.event.extendedProps.source === "goal") {
+      setSelectedGoalEvent(info.event.extendedProps.goalEvent as GoalCalendarEvent);
+      setGoalDetailOpen(true);
+      return;
+    }
     setSelectedEvent(fromEventApi(info.event));
     setDetailOpen(true);
   }, []);
@@ -157,6 +183,7 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
         defaultIsAllDay={draftAllDay}
       />
       <EventDetailDialog event={selectedEvent} open={detailOpen} onOpenChange={setDetailOpen} />
+      <GoalEventDialog event={selectedGoalEvent} open={goalDetailOpen} onOpenChange={setGoalDetailOpen} />
     </>
   );
 }
