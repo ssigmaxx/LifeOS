@@ -6,7 +6,7 @@ import type { Proposal, ToolExecutionResult } from "./types";
 
 const MAX_TOOL_CALLS = Number(process.env.AI_MAX_TOOL_CALLS_PER_REQUEST ?? "6");
 const MAX_OUTPUT_TOKENS = Number(process.env.AI_MAX_OUTPUT_TOKENS ?? "2048");
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.6-flash";
 
 let client: GoogleGenAI | null = null;
 function getClient(): GoogleGenAI {
