@@ -2,6 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { calculateStreaks, type StreakResult } from "@/lib/streaks";
 import { isLogComplete, type TrackingType } from "@/lib/habit-completion";
+import { average, maxOf } from "@/lib/stats";
+import { listHabits } from "./habit-service";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -222,4 +224,51 @@ export async function getFriendsSharedHabits(): Promise<FriendSharedHabits[]> {
     friendEmail: f.friendEmail,
     habits: habitsByFriend.get(f.friendId) ?? [],
   }));
+}
+
+export type LeaderboardEntry = {
+  id: string;
+  label: string;
+  isSelf: boolean;
+  /** Average completion rate across shared habits, 0-1. Null means they
+   * (or you) haven't shared any habits yet — excluded from ranking, not
+   * shown as a misleading 0%. */
+  avgCompletionRate: number | null;
+  bestStreak: number;
+  sharedHabitCount: number;
+};
+
+// Ranks only on shared habits — friends never see anything you haven't
+// explicitly marked shared_with_friends, so the leaderboard can't lean on
+// private data either. Reuses the same streak/completion math
+// getFriendsSharedHabits() and listHabits() already compute.
+export async function getFriendsLeaderboard(): Promise<LeaderboardEntry[]> {
+  const { userId } = await requireUserId();
+  const [sharedByFriend, ownHabits] = await Promise.all([getFriendsSharedHabits(), listHabits()]);
+
+  const entries: LeaderboardEntry[] = sharedByFriend.map((f) => ({
+    id: f.friendId,
+    label: f.friendEmail,
+    isSelf: false,
+    avgCompletionRate: average(f.habits.map((h) => h.streak.completionRate)),
+    bestStreak: maxOf(f.habits.map((h) => h.streak.currentStreak)) ?? 0,
+    sharedHabitCount: f.habits.length,
+  }));
+
+  const ownShared = ownHabits.filter((h) => h.sharedWithFriends);
+  entries.push({
+    id: userId,
+    label: "You",
+    isSelf: true,
+    avgCompletionRate: average(ownShared.map((h) => h.streak.completionRate)),
+    bestStreak: maxOf(ownShared.map((h) => h.streak.currentStreak)) ?? 0,
+    sharedHabitCount: ownShared.length,
+  });
+
+  return entries.sort((a, b) => {
+    if (a.avgCompletionRate == null && b.avgCompletionRate == null) return 0;
+    if (a.avgCompletionRate == null) return 1;
+    if (b.avgCompletionRate == null) return -1;
+    return b.avgCompletionRate - a.avgCompletionRate;
+  });
 }

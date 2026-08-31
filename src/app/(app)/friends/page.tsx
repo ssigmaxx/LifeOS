@@ -1,15 +1,17 @@
 import { Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
-import { getFriendsSharedHabits, listFriendConnections } from "@/lib/services/friend-service";
+import { getFriendsLeaderboard, getFriendsSharedHabits, listFriendConnections } from "@/lib/services/friend-service";
 import { AddFriendForm } from "./add-friend-form";
 import { IncomingRequestList, SentRequestList } from "./friend-request-list";
 import { FriendGroup } from "./friend-group";
+import { Leaderboard } from "./leaderboard";
 
 export default async function FriendsPage() {
-  const [connections, sharedHabits] = await Promise.all([
+  const [connections, sharedHabits, leaderboard] = await Promise.all([
     listFriendConnections(),
     getFriendsSharedHabits(),
+    getFriendsLeaderboard(),
   ]);
 
   const incoming = connections.filter((c) => c.status === "pending" && !c.isRequester);
@@ -53,6 +55,8 @@ export default async function FriendsPage() {
           </Card>
         </div>
       ) : null}
+
+      <Leaderboard entries={leaderboard} />
 
       <div className="space-y-2">
         <h2 className="text-sm font-medium text-muted-foreground">Friends</h2>
