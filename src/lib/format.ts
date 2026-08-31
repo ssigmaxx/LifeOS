@@ -19,3 +19,7 @@ export function formatMl(ml: number): string {
 export function formatClockTime(date: Date): string {
   return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
+
+export function formatCurrency(amount: number, currency: string = "EUR"): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
+}

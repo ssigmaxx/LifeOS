@@ -223,6 +223,14 @@ export async function getCarbonSummary(days: number = 30): Promise<CarbonSummary
   return summarizeCarbonActivities(activities, { startDate, endDate });
 }
 
+// Single combined CO2e total for a date range — used by budget-service.ts
+// to compare this-window-vs-prior-window for the lifestyle verdict.
+export async function getCarbonTotalForRange(startDate: string, endDate: string): Promise<number> {
+  const activities = await getActivitiesForRange(startDate, endDate);
+  const summary = summarizeCarbonActivities(activities, { startDate, endDate });
+  return summary.totalCo2eKg;
+}
+
 // Total (all categories combined) CO2e per day, for pairing against other
 // daily metrics — see analytics-service.ts's cross-metric insights.
 export async function getDailyCarbonTotals(range: { start: string; end: string }): Promise<Map<string, number>> {

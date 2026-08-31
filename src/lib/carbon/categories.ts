@@ -42,13 +42,26 @@ export const ENERGY_SUPPORTED_BY_API: Record<EnergyKind, boolean> = {
 
 export const DEFAULT_ELECTRICITY_REGION = "DE";
 
-export type PurchaseCategoryOption = "groceries" | "dining_out" | "clothing" | "electronics" | "other";
+export type PurchaseCategoryOption =
+  | "groceries"
+  | "dining_out"
+  | "clothing"
+  | "electronics"
+  | "transport"
+  | "housing"
+  | "entertainment"
+  | "health"
+  | "other";
 
 export const PURCHASE_CATEGORY_LABELS: Record<PurchaseCategoryOption, string> = {
   groceries: "Groceries",
   dining_out: "Dining out",
   clothing: "Clothing",
   electronics: "Electronics",
+  transport: "Transport",
+  housing: "Housing",
+  entertainment: "Entertainment",
+  health: "Health",
   other: "Other",
 };
 
@@ -60,6 +73,10 @@ export const PURCHASE_CATEGORY_TO_NACE: Record<PurchaseCategoryOption, string> =
   dining_out: "56",
   clothing: "47.71",
   electronics: "47.41",
+  transport: "49",
+  housing: "68",
+  entertainment: "93",
+  health: "47.73",
   other: "47",
 };
 

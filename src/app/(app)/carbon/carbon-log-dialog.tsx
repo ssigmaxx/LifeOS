@@ -166,7 +166,13 @@ function PurchaseForm({ onLogged }: { onLogged: () => void }) {
   );
 }
 
-export function CarbonLogDialog({ trigger }: { trigger: ReactNode }) {
+export function CarbonLogDialog({
+  trigger,
+  defaultTab = "travel",
+}: {
+  trigger: ReactNode;
+  defaultTab?: "travel" | "energy" | "shopping";
+}) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
 
@@ -178,7 +184,7 @@ export function CarbonLogDialog({ trigger }: { trigger: ReactNode }) {
           <DialogTitle>Log activity</DialogTitle>
           <DialogDescription>Add a travel trip, home energy usage, or a purchase.</DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="travel">
+        <Tabs defaultValue={defaultTab}>
           <TabsList className="w-full">
             <TabsTrigger value="travel">Travel</TabsTrigger>
             <TabsTrigger value="energy">Energy</TabsTrigger>
