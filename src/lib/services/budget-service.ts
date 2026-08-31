@@ -29,96 +29,172 @@ function addDaysISO(dateISO: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-export type BudgetCategory = "overall" | PurchaseCategoryOption;
-
-export async function listBudgets(): Promise<Record<BudgetCategory, number>> {
-  const { supabase, userId } = await requireUserId();
-  const { data, error } = await supabase.from("budgets").select("category, amount").eq("user_id", userId);
-  if (error) throw error;
-
-  const budgets = {} as Record<BudgetCategory, number>;
-  for (const row of data) budgets[row.category as BudgetCategory] = row.amount;
-  return budgets;
+// Sunday-start week, in UTC, matching how the rest of the app treats
+// date-only strings elsewhere.
+function startOfWeekISO(): string {
+  const today = todayISO();
+  const [y, m, d] = today.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() - date.getUTCDay());
+  return date.toISOString().slice(0, 10);
 }
 
-export async function upsertBudget(category: BudgetCategory, amount: number): Promise<void> {
+export type BudgetPeriod = "week" | "month";
+export type BudgetCategory = "overall" | PurchaseCategoryOption;
+
+export type BudgetEntry = { category: BudgetCategory; period: BudgetPeriod; amount: number };
+
+export async function listBudgets(): Promise<BudgetEntry[]> {
+  const { supabase, userId } = await requireUserId();
+  const { data, error } = await supabase.from("budgets").select("category, period, amount").eq("user_id", userId);
+  if (error) throw error;
+  return data.map((row) => ({
+    category: row.category as BudgetCategory,
+    period: row.period as BudgetPeriod,
+    amount: row.amount,
+  }));
+}
+
+export async function upsertBudget(category: BudgetCategory, period: BudgetPeriod, amount: number): Promise<void> {
   const { supabase, userId } = await requireUserId();
   const { error } = await supabase
     .from("budgets")
     .upsert(
-      { user_id: userId, category, amount, updated_at: new Date().toISOString() },
-      { onConflict: "user_id,category" },
+      { user_id: userId, category, period, amount, updated_at: new Date().toISOString() },
+      { onConflict: "user_id,category,period" },
     );
   if (error) throw error;
 }
 
-export async function deleteBudget(category: BudgetCategory): Promise<void> {
+export async function deleteBudget(category: BudgetCategory, period: BudgetPeriod): Promise<void> {
   const { supabase, userId } = await requireUserId();
-  const { error } = await supabase.from("budgets").delete().eq("user_id", userId).eq("category", category);
+  const { error } = await supabase
+    .from("budgets")
+    .delete()
+    .eq("user_id", userId)
+    .eq("category", category)
+    .eq("period", period);
   if (error) throw error;
 }
 
-export type CategorySpending = {
+/** Sets (or clears, when null) both the weekly plan and the monthly max for a category in one call. */
+export async function saveBudget(
+  category: BudgetCategory,
+  weeklyAmount: number | null,
+  monthlyAmount: number | null,
+): Promise<void> {
+  await Promise.all([
+    weeklyAmount != null ? upsertBudget(category, "week", weeklyAmount) : deleteBudget(category, "week"),
+    monthlyAmount != null ? upsertBudget(category, "month", monthlyAmount) : deleteBudget(category, "month"),
+  ]);
+}
+
+export type CategoryBudgetStatus = {
   category: BudgetCategory;
   label: string;
-  spentAmount: number;
+  weekSpent: number;
+  weekBudget: number | null;
+  weekOverBy: number | null;
+  monthSpent: number;
+  monthBudget: number | null;
+  monthOverBy: number | null;
+  /** Month-to-date CO2e for this category. */
   co2eKg: number;
-  budgetAmount: number | null;
-  /** Positive amount over budget; null if under/no budget set. */
-  overBy: number | null;
 };
 
-export type MonthlyBudgetStatus = {
-  overall: CategorySpending;
-  categories: CategorySpending[];
+export type BudgetStatus = {
+  overall: CategoryBudgetStatus;
+  categories: CategoryBudgetStatus[];
   categoriesOverBudget: number;
   categoriesWithBudget: number;
 };
 
-function toStatus(category: BudgetCategory, label: string, spent: number, co2e: number, budget: number | null): CategorySpending {
-  const overBy = budget != null && spent > budget ? spent - budget : null;
-  return { category, label, spentAmount: spent, co2eKg: co2e, budgetAmount: budget, overBy };
+function overBy(spent: number, budget: number | null): number | null {
+  return budget != null && spent > budget ? spent - budget : null;
 }
 
-export async function getMonthlyBudgetStatus(): Promise<MonthlyBudgetStatus> {
+export async function getBudgetStatus(): Promise<BudgetStatus> {
   const { supabase, userId } = await requireUserId();
-  const startDate = firstOfMonthISO();
-  const endDate = todayISO();
+  const weekStart = startOfWeekISO();
+  const monthStart = firstOfMonthISO();
+  const rangeStart = weekStart < monthStart ? weekStart : monthStart;
+  const today = todayISO();
 
   const [{ data: purchases, error: purchasesError }, budgets] = await Promise.all([
     supabase
       .from("carbon_purchase_logs")
-      .select("category, amount, co2e_kg")
+      .select("category, amount, co2e_kg, occurred_at")
       .eq("user_id", userId)
-      .gte("occurred_at", startDate)
-      .lte("occurred_at", endDate),
+      .gte("occurred_at", rangeStart)
+      .lte("occurred_at", today),
     listBudgets(),
   ]);
   if (purchasesError) throw purchasesError;
 
-  const spentByCategory = new Map<PurchaseCategoryOption, { amount: number; co2e: number }>();
-  let overallSpent = 0;
-  let overallCo2e = 0;
-  for (const row of purchases) {
-    const category = row.category as PurchaseCategoryOption;
-    const entry = spentByCategory.get(category) ?? { amount: 0, co2e: 0 };
-    entry.amount += row.amount;
-    entry.co2e += row.co2e_kg ?? 0;
-    spentByCategory.set(category, entry);
-    overallSpent += row.amount;
-    overallCo2e += row.co2e_kg ?? 0;
+  const weekBudgetByCategory = new Map<BudgetCategory, number>();
+  const monthBudgetByCategory = new Map<BudgetCategory, number>();
+  for (const b of budgets) {
+    (b.period === "week" ? weekBudgetByCategory : monthBudgetByCategory).set(b.category, b.amount);
   }
 
-  const categories: CategorySpending[] = (Object.keys(PURCHASE_CATEGORY_LABELS) as PurchaseCategoryOption[])
-    .map((category) => {
-      const spent = spentByCategory.get(category) ?? { amount: 0, co2e: 0 };
-      return toStatus(category, PURCHASE_CATEGORY_LABELS[category], spent.amount, spent.co2e, budgets[category] ?? null);
-    })
-    .filter((c) => c.spentAmount > 0 || c.budgetAmount != null);
+  const weekByCategory = new Map<PurchaseCategoryOption, number>();
+  const monthByCategory = new Map<PurchaseCategoryOption, number>();
+  const co2eByCategory = new Map<PurchaseCategoryOption, number>();
+  let weekTotal = 0;
+  let monthTotal = 0;
+  let co2eTotal = 0;
 
-  const overall = toStatus("overall", "Overall", overallSpent, overallCo2e, budgets.overall ?? null);
-  const categoriesOverBudget = categories.filter((c) => c.overBy != null).length;
-  const categoriesWithBudget = categories.filter((c) => c.budgetAmount != null).length;
+  for (const row of purchases) {
+    const category = row.category as PurchaseCategoryOption;
+    if (row.occurred_at >= weekStart) {
+      weekByCategory.set(category, (weekByCategory.get(category) ?? 0) + row.amount);
+      weekTotal += row.amount;
+    }
+    if (row.occurred_at >= monthStart) {
+      monthByCategory.set(category, (monthByCategory.get(category) ?? 0) + row.amount);
+      monthTotal += row.amount;
+      const co2e = row.co2e_kg ?? 0;
+      co2eByCategory.set(category, (co2eByCategory.get(category) ?? 0) + co2e);
+      co2eTotal += co2e;
+    }
+  }
+
+  const categories: CategoryBudgetStatus[] = (Object.keys(PURCHASE_CATEGORY_LABELS) as PurchaseCategoryOption[])
+    .map((category) => {
+      const weekSpent = weekByCategory.get(category) ?? 0;
+      const monthSpent = monthByCategory.get(category) ?? 0;
+      const weekBudget = weekBudgetByCategory.get(category) ?? null;
+      const monthBudget = monthBudgetByCategory.get(category) ?? null;
+      return {
+        category,
+        label: PURCHASE_CATEGORY_LABELS[category],
+        weekSpent,
+        weekBudget,
+        weekOverBy: overBy(weekSpent, weekBudget),
+        monthSpent,
+        monthBudget,
+        monthOverBy: overBy(monthSpent, monthBudget),
+        co2eKg: co2eByCategory.get(category) ?? 0,
+      };
+    })
+    .filter((c) => c.monthSpent > 0 || c.weekBudget != null || c.monthBudget != null);
+
+  const overallWeekBudget = weekBudgetByCategory.get("overall") ?? null;
+  const overallMonthBudget = monthBudgetByCategory.get("overall") ?? null;
+  const overall: CategoryBudgetStatus = {
+    category: "overall",
+    label: "Overall",
+    weekSpent: weekTotal,
+    weekBudget: overallWeekBudget,
+    weekOverBy: overBy(weekTotal, overallWeekBudget),
+    monthSpent: monthTotal,
+    monthBudget: overallMonthBudget,
+    monthOverBy: overBy(monthTotal, overallMonthBudget),
+    co2eKg: co2eTotal,
+  };
+
+  const categoriesOverBudget = categories.filter((c) => c.weekOverBy != null || c.monthOverBy != null).length;
+  const categoriesWithBudget = categories.filter((c) => c.weekBudget != null || c.monthBudget != null).length;
 
   return { overall, categories, categoriesOverBudget, categoriesWithBudget };
 }
@@ -129,7 +205,7 @@ const TREND_WINDOW_DAYS = 30;
 
 export async function getLifestyleVerdict(): Promise<LifestyleVerdict> {
   const [status, thisWindowKg, lastWindowKg] = await Promise.all([
-    getMonthlyBudgetStatus(),
+    getBudgetStatus(),
     getCarbonTotalForRange(addDaysISO(todayISO(), -(TREND_WINDOW_DAYS - 1)), todayISO()),
     getCarbonTotalForRange(
       addDaysISO(todayISO(), -(TREND_WINDOW_DAYS * 2 - 1)),
@@ -144,4 +220,39 @@ export async function getLifestyleVerdict(): Promise<LifestyleVerdict> {
     categoriesWithBudget: status.categoriesWithBudget,
     carbonChangePct,
   });
+}
+
+export type RecentPurchase = {
+  id: string;
+  category: PurchaseCategoryOption;
+  categoryLabel: string;
+  amount: number;
+  co2eKg: number | null;
+  note: string | null;
+  purchaseMode: "online" | "offline" | null;
+  condition: "new" | "secondhand" | null;
+  occurredAt: string;
+};
+
+export async function listRecentPurchases(limit = 8): Promise<RecentPurchase[]> {
+  const { supabase, userId } = await requireUserId();
+  const { data, error } = await supabase
+    .from("carbon_purchase_logs")
+    .select("id, category, amount, co2e_kg, note, purchase_mode, condition, occurred_at")
+    .eq("user_id", userId)
+    .order("occurred_at", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data.map((row) => ({
+    id: row.id,
+    category: row.category as PurchaseCategoryOption,
+    categoryLabel: PURCHASE_CATEGORY_LABELS[row.category as PurchaseCategoryOption],
+    amount: row.amount,
+    co2eKg: row.co2e_kg,
+    note: row.note,
+    purchaseMode: row.purchase_mode as "online" | "offline" | null,
+    condition: row.condition as "new" | "secondhand" | null,
+    occurredAt: row.occurred_at,
+  }));
 }

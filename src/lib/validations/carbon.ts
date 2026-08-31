@@ -22,13 +22,28 @@ export const energyLogInputSchema = z.object({
 
 export type EnergyLogInput = z.infer<typeof energyLogInputSchema>;
 
-export const purchaseCategorySchema = z.enum(["groceries", "dining_out", "clothing", "electronics", "other"]);
+export const purchaseCategorySchema = z.enum([
+  "groceries",
+  "dining_out",
+  "clothing",
+  "electronics",
+  "transport",
+  "housing",
+  "entertainment",
+  "health",
+  "other",
+]);
+
+export const purchaseModeSchema = z.enum(["online", "offline"]);
+export const purchaseConditionSchema = z.enum(["new", "secondhand"]);
 
 export const purchaseLogInputSchema = z.object({
   category: purchaseCategorySchema,
   amount: z.coerce.number().positive("Amount must be greater than 0.").max(1000000),
   occurredAt: z.string().optional(),
   note: z.string().max(200).optional(),
+  purchaseMode: purchaseModeSchema.optional(),
+  condition: purchaseConditionSchema.optional(),
 });
 
 export type PurchaseLogInput = z.infer<typeof purchaseLogInputSchema>;

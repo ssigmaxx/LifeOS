@@ -17,9 +17,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   ENERGY_KIND_LABELS,
   PURCHASE_CATEGORY_LABELS,
+  PURCHASE_CONDITION_LABELS,
+  PURCHASE_MODE_LABELS,
   TRAVEL_MODE_LABELS,
   type EnergyKind,
   type PurchaseCategoryOption,
+  type PurchaseCondition,
+  type PurchaseMode,
   type TravelModeOption,
 } from "@/lib/carbon/categories";
 import { logEnergyAction, logPurchaseAction, logTravelAction, type FormActionState } from "./actions";
@@ -125,16 +129,24 @@ function EnergyForm({ onLogged }: { onLogged: () => void }) {
 
 function PurchaseForm({ onLogged }: { onLogged: () => void }) {
   const [category, setCategory] = useState<PurchaseCategoryOption>("groceries");
+  const [purchaseMode, setPurchaseMode] = useState<PurchaseMode>("offline");
+  const [condition, setCondition] = useState<PurchaseCondition>("new");
   const [state, formAction, isPending] = useLoggedOnSuccess(logPurchaseAction, onLogged);
 
   return (
     <form
       action={(formData) => {
         formData.set("category", category);
+        formData.set("purchaseMode", purchaseMode);
+        formData.set("condition", condition);
         formAction(formData);
       }}
       className="space-y-4"
     >
+      <div className="space-y-2">
+        <Label htmlFor="note">What did you buy?</Label>
+        <Input id="note" name="note" placeholder="e.g. Winter jacket" maxLength={200} />
+      </div>
       <div className="space-y-2">
         <Label htmlFor="category">Category</Label>
         <Select value={category} onValueChange={(v) => setCategory(v as PurchaseCategoryOption)}>
@@ -154,6 +166,43 @@ function PurchaseForm({ onLogged }: { onLogged: () => void }) {
         <Label htmlFor="amount">Amount (EUR)</Label>
         <Input id="amount" name="amount" type="number" step="any" min={0} required />
       </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="purchaseMode">Where</Label>
+          <Select value={purchaseMode} onValueChange={(v) => setPurchaseMode(v as PurchaseMode)}>
+            <SelectTrigger id="purchaseMode" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(PURCHASE_MODE_LABELS) as PurchaseMode[]).map((m) => (
+                <SelectItem key={m} value={m}>
+                  {PURCHASE_MODE_LABELS[m]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="condition">Condition</Label>
+          <Select value={condition} onValueChange={(v) => setCondition(v as PurchaseCondition)}>
+            <SelectTrigger id="condition" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(PURCHASE_CONDITION_LABELS) as PurchaseCondition[]).map((c) => (
+                <SelectItem key={c} value={c}>
+                  {PURCHASE_CONDITION_LABELS[c]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      {condition === "secondhand" ? (
+        <p className="text-xs text-muted-foreground">
+          Secondhand purchases are estimated at a fraction of the footprint of buying new.
+        </p>
+      ) : null}
       {state.error ? (
         <p role="alert" className="text-sm text-destructive">
           {state.error}

@@ -82,3 +82,22 @@ export const PURCHASE_CATEGORY_TO_NACE: Record<PurchaseCategoryOption, string> =
 
 export const DEFAULT_SPEND_REGION = "DE";
 export const DEFAULT_CURRENCY = "EUR";
+
+export type PurchaseMode = "online" | "offline";
+
+export const PURCHASE_MODE_LABELS: Record<PurchaseMode, string> = {
+  online: "Online",
+  offline: "In-store",
+};
+
+export type PurchaseCondition = "new" | "secondhand";
+
+export const PURCHASE_CONDITION_LABELS: Record<PurchaseCondition, string> = {
+  new: "New",
+  secondhand: "Secondhand",
+};
+
+// A secondhand item's manufacturing footprint was already spent by its first
+// owner — only a small resale/logistics footprint remains — so its estimate
+// is heavily discounted relative to buying the same thing new.
+export const SECONDHAND_CO2E_MULTIPLIER = 0.1;

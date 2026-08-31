@@ -2,16 +2,21 @@ import { Plus, Sparkles, TrendingUp, TriangleAlert, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
-import { getLifestyleVerdict, getMonthlyBudgetStatus } from "@/lib/services/budget-service";
+import { getBudgetStatus, getLifestyleVerdict, listRecentPurchases } from "@/lib/services/budget-service";
 import { CarbonLogDialog } from "../carbon/carbon-log-dialog";
 import { BudgetCategoryRow } from "./budget-category-row";
+import { RecentPurchases } from "./recent-purchases";
 
 const VERDICT_ICON = { good: TrendingUp, mixed: Sparkles, needs_attention: TriangleAlert } as const;
 
 export default async function BudgetPage() {
-  const [status, verdict] = await Promise.all([getMonthlyBudgetStatus(), getLifestyleVerdict()]);
+  const [status, verdict, recentPurchases] = await Promise.all([
+    getBudgetStatus(),
+    getLifestyleVerdict(),
+    listRecentPurchases(),
+  ]);
   const VerdictIcon = VERDICT_ICON[verdict.tier];
-  const hasAnyData = status.overall.spentAmount > 0 || status.categories.length > 0;
+  const hasAnyData = status.overall.monthSpent > 0 || status.categories.length > 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,6 +74,8 @@ export default async function BudgetPage() {
               </Card>
             </div>
           ) : null}
+
+          <RecentPurchases purchases={recentPurchases} />
         </>
       )}
     </div>

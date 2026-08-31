@@ -14,10 +14,13 @@ import {
   ENERGY_SUPPORTED_BY_API,
   PURCHASE_CATEGORY_LABELS,
   PURCHASE_CATEGORY_TO_NACE,
+  SECONDHAND_CO2E_MULTIPLIER,
   TRAVEL_MODE_LABELS,
   TRAVEL_MODE_TO_CLIMATIQ,
   type EnergyKind,
   type PurchaseCategoryOption,
+  type PurchaseCondition,
+  type PurchaseMode,
   type TravelModeOption,
 } from "@/lib/carbon/categories";
 import { estimateFoodCo2eKg } from "@/lib/carbon/food-factors";
@@ -118,15 +121,19 @@ export async function logPurchase(input: {
   amount: number;
   occurredAt?: string;
   note?: string;
+  purchaseMode?: PurchaseMode;
+  condition?: PurchaseCondition;
 }): Promise<void> {
   const { supabase, userId } = await requireUserId();
-  const co2eKg = await estimateProcurementSpend({
+  const baseCo2eKg = await estimateProcurementSpend({
     classificationCode: PURCHASE_CATEGORY_TO_NACE[input.category],
     classificationType: "nace2",
     money: input.amount,
     currency: DEFAULT_CURRENCY,
     region: DEFAULT_SPEND_REGION,
   });
+  const co2eKg =
+    baseCo2eKg != null && input.condition === "secondhand" ? baseCo2eKg * SECONDHAND_CO2E_MULTIPLIER : baseCo2eKg;
   const { error } = await supabase.from("carbon_purchase_logs").insert({
     user_id: userId,
     occurred_at: input.occurredAt ?? todayISO(),
@@ -135,6 +142,8 @@ export async function logPurchase(input: {
     currency: DEFAULT_CURRENCY,
     co2e_kg: co2eKg,
     note: input.note ?? null,
+    purchase_mode: input.purchaseMode ?? null,
+    condition: input.condition ?? null,
   });
   if (error) throw error;
 }
