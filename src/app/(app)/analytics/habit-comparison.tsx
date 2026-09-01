@@ -49,11 +49,17 @@ export function HabitComparison({ habits }: { habits: HabitAnalytics[] }) {
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="habitCompletionFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={1} />
+                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.5} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
                 <Tooltip formatter={(value) => [`${value}%`, "Completion"]} />
-                <Bar dataKey="completion" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="completion" fill="url(#habitCompletionFill)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

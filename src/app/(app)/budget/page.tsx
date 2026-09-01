@@ -2,6 +2,7 @@ import { CalendarRange, Plus, Sparkles, TrendingUp, TriangleAlert, Wallet } from
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
+import { IconBadge, type IconBadgeTone } from "@/components/icon-badge";
 import {
   getBudgetStatus,
   getLifestyleVerdict,
@@ -14,6 +15,11 @@ import { RecentPurchases } from "./recent-purchases";
 import { PlanMonthDialog } from "./plan-month-dialog";
 
 const VERDICT_ICON = { good: TrendingUp, mixed: Sparkles, needs_attention: TriangleAlert } as const;
+const VERDICT_TONE: Record<keyof typeof VERDICT_ICON, IconBadgeTone> = {
+  good: "emerald",
+  mixed: "amber",
+  needs_attention: "rose",
+};
 
 export default async function BudgetPage() {
   const [status, verdict, recentPurchases, allocation] = await Promise.all([
@@ -62,9 +68,7 @@ export default async function BudgetPage() {
       {hasAnyData ? (
         <Card>
           <CardContent className="flex items-start gap-3">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-              <VerdictIcon className="size-4 text-muted-foreground" />
-            </div>
+            <IconBadge icon={VerdictIcon} tone={VERDICT_TONE[verdict.tier]} />
             <p className="text-sm">{verdict.summary}</p>
           </CardContent>
         </Card>

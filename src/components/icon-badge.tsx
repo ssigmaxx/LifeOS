@@ -7,8 +7,10 @@ import { cn } from "@/lib/utils";
 // tinted-card pattern already used in nutrition/meal-list.tsx.
 const TONE_CLASSES = {
   blue: "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400",
+  cyan: "bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-400",
   indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400",
   teal: "bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400",
+  yellow: "bg-yellow-50 text-yellow-600 dark:bg-yellow-950/40 dark:text-yellow-400",
   orange: "bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400",
   rose: "bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400",
   amber: "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400",

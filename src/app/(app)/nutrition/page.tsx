@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { RadialProgress } from "@/components/radial-progress";
 import { getDailyLog, getNutritionProfile, getSavedFoods, sumNutrition } from "@/lib/services/nutrition-service";
 import { FoodLogPanel } from "./food-log-panel";
 import { MealList } from "./meal-list";
@@ -62,15 +63,21 @@ export default async function NutritionPage() {
             <CardTitle>Today</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-baseline justify-between text-sm">
-              <span className="font-medium">
-                {totals.calories} / {profile.dailyCalorieTarget} kcal
-              </span>
-              <span className="text-muted-foreground">
-                {Math.max(profile.dailyCalorieTarget - totals.calories, 0)} kcal remaining
-              </span>
+            <div className="flex items-center gap-4">
+              <RadialProgress value={macroPct(totals.calories, profile.dailyCalorieTarget)} size={80} strokeWidth={7}>
+                <span className="text-base font-semibold tracking-tight">
+                  {macroPct(totals.calories, profile.dailyCalorieTarget)}%
+                </span>
+              </RadialProgress>
+              <div>
+                <p className="text-sm font-medium">
+                  {totals.calories} / {profile.dailyCalorieTarget} kcal
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {Math.max(profile.dailyCalorieTarget - totals.calories, 0)} kcal remaining
+                </p>
+              </div>
             </div>
-            <Progress value={macroPct(totals.calories, profile.dailyCalorieTarget)} />
 
             <div className="grid grid-cols-3 gap-3 pt-1 text-xs">
               <div className="space-y-1">

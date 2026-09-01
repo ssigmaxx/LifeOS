@@ -1,6 +1,7 @@
 import { Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { IconBadge } from "@/components/icon-badge";
 import type { CrossMetricInsight } from "@/lib/services/analytics-service";
 
 const STRENGTH_LABEL: Record<CrossMetricInsight["strength"], string> = {
@@ -13,9 +14,7 @@ function InsightRow({ insight }: { insight: CrossMetricInsight }) {
   const Icon = insight.direction === "positive" ? TrendingUp : TrendingDown;
   return (
     <div className="flex items-center gap-3 py-2">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-        <Icon className="size-4 text-muted-foreground" />
-      </div>
+      <IconBadge icon={Icon} tone={insight.direction === "positive" ? "emerald" : "rose"} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm">
           {insight.metricA} <span className="text-muted-foreground">and</span> {insight.metricB}

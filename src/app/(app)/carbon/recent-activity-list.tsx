@@ -13,10 +13,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { IconBadge, type IconBadgeTone } from "@/components/icon-badge";
 import type { RecentActivityItem } from "@/lib/services/carbon-service";
 import { deleteCarbonEntryAction } from "./actions";
 
 const CATEGORY_ICON = { food: Apple, travel: Car, energy: Zap, shopping: ShoppingBag } as const;
+const CATEGORY_TONE: Record<keyof typeof CATEGORY_ICON, IconBadgeTone> = {
+  food: "lime",
+  travel: "cyan",
+  energy: "yellow",
+  shopping: "violet",
+};
 
 function formatDate(dateISO: string) {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -29,9 +36,7 @@ function ActivityRow({ item }: { item: RecentActivityItem }) {
 
   return (
     <div className="flex items-center gap-3 py-2">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-        <Icon className="size-4 text-muted-foreground" />
-      </div>
+      <IconBadge icon={Icon} tone={CATEGORY_TONE[item.category as keyof typeof CATEGORY_ICON]} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm">{item.label}</p>
         <p className="text-xs text-muted-foreground">{formatDate(item.date)}</p>
