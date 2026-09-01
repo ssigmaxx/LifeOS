@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { ListChecks } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { RadialProgress } from "@/components/radial-progress";
 import { getTodaySummary } from "@/lib/services/today-service";
 import { getTodayWater } from "@/lib/services/water-service";
 import { getLatestSleep } from "@/lib/services/sleep-service";
@@ -79,23 +79,22 @@ export default async function TodayPage() {
       </div>
 
       <Card>
-        <CardContent className="flex items-center justify-between">
+        <CardContent className="flex items-center gap-4">
+          <RadialProgress value={scorePct ?? 0}>
+            <span className="text-lg font-semibold tracking-tight">
+              {scorePct != null ? `${scorePct}%` : "—"}
+            </span>
+          </RadialProgress>
           <div>
             <p className="text-sm text-muted-foreground">Today&apos;s score</p>
-            <p className="text-3xl font-semibold tracking-tight">
-              {scorePct != null ? `${scorePct}%` : "—"}
-            </p>
             {summary.totalCount > 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm font-medium">
                 {summary.completedCount} of {summary.totalCount} habits done
               </p>
             ) : null}
             <Link href="/recap" className="text-xs text-muted-foreground hover:underline">
               See today&apos;s recap →
             </Link>
-          </div>
-          <div className="w-28 shrink-0">
-            <Progress value={scorePct ?? 0} />
           </div>
         </CardContent>
       </Card>

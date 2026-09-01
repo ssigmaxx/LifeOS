@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { IconBadge } from "@/components/icon-badge";
 import type { JournalEntry } from "@/lib/services/journal-service";
 import { MorningEntryForm } from "@/app/(app)/journal/morning-entry-form";
 import { EveningEntryForm } from "@/app/(app)/journal/evening-entry-form";
@@ -33,9 +34,7 @@ export function JournalCard({
   return (
     <Card>
       <CardContent className="flex items-center gap-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-          <BookOpen className="size-4 text-muted-foreground" />
-        </div>
+        <IconBadge icon={BookOpen} tone="amber" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">Journal</p>
           <p className="text-xs text-muted-foreground">

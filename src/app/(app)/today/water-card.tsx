@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { IconBadge } from "@/components/icon-badge";
 import { formatMl } from "@/lib/format";
 import type { TodayWater } from "@/lib/services/water-service";
 import { addWaterLogAction, deleteWaterLogAction } from "./actions";
@@ -28,9 +29,7 @@ export function WaterCard({ water }: { water: TodayWater }) {
     <Card>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-            <Droplets className="size-4 text-muted-foreground" />
-          </div>
+          <IconBadge icon={Droplets} tone="blue" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">Water</p>
             <p className="text-xs text-muted-foreground">

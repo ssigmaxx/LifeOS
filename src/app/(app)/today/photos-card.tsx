@@ -1,5 +1,6 @@
 import { Images } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { IconBadge } from "@/components/icon-badge";
 import type { PhotoWithThumb } from "@/lib/services/photo-service";
 import { PhotoSlot } from "@/app/(app)/photos/photo-slot";
 
@@ -19,9 +20,7 @@ export function PhotosCard({
   return (
     <Card>
       <CardContent className="flex items-center gap-4">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-          <Images className="size-4 text-muted-foreground" />
-        </div>
+        <IconBadge icon={Images} tone="pink" />
         <p className="text-sm font-medium">Photos</p>
         <div className="ml-auto flex items-center gap-4">
           <PhotoSlot

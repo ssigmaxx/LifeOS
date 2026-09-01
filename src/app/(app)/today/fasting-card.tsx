@@ -5,6 +5,7 @@ import { Timer, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { IconBadge } from "@/components/icon-badge";
 import { formatMinutes } from "@/lib/format";
 import type { FastingSession } from "@/lib/services/fasting-service";
 import { cancelFastAction, endFastAction, startFastAction } from "./actions";
@@ -44,9 +45,7 @@ export function FastingCard({
     <Card>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-            <Timer className="size-4 text-muted-foreground" />
-          </div>
+          <IconBadge icon={Timer} tone="orange" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">Fasting</p>
             <p className="text-xs text-muted-foreground">

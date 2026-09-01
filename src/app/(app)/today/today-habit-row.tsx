@@ -11,7 +11,7 @@ export function TodayHabitRow({ habit }: { habit: TodayHabit }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{habit.name}</p>
         {habit.streak.currentStreak > 0 ? (
-          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          <p className="flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400">
             <Flame className="size-3" />
             {habit.streak.currentStreak} day streak
           </p>

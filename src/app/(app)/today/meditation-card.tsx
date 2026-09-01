@@ -5,6 +5,7 @@ import { Wind } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { IconBadge } from "@/components/icon-badge";
 import { formatMinutes } from "@/lib/format";
 import type { TodayMeditation } from "@/lib/services/meditation-service";
 import { logMeditationAction } from "./actions";
@@ -25,9 +26,7 @@ export function MeditationCard({ meditation }: { meditation: TodayMeditation }) 
     <Card>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-            <Wind className="size-4 text-muted-foreground" />
-          </div>
+          <IconBadge icon={Wind} tone="teal" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">Meditation</p>
             <p className="text-xs text-muted-foreground">

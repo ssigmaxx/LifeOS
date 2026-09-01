@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { IconBadge } from "@/components/icon-badge";
 import { formatMinutes } from "@/lib/format";
 import type { TodayWorkout } from "@/lib/services/workout-service";
 import {
@@ -44,9 +45,7 @@ export function WorkoutCard({ workout }: { workout: TodayWorkout }) {
   return (
     <Card>
       <CardContent className="flex items-center gap-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-          <Dumbbell className="size-4 text-muted-foreground" />
-        </div>
+        <IconBadge icon={Dumbbell} tone="rose" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">Gym</p>
           <p className="text-xs text-muted-foreground">{summary}</p>

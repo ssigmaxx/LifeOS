@@ -3,6 +3,7 @@ import { Apple } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { IconBadge } from "@/components/icon-badge";
 import type { DailyTotals, NutritionProfile } from "@/lib/services/nutrition-service";
 
 export function NutritionCard({
@@ -16,9 +17,7 @@ export function NutritionCard({
     return (
       <Card>
         <CardContent className="flex items-center gap-4">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-            <Apple className="size-4 text-muted-foreground" />
-          </div>
+          <IconBadge icon={Apple} tone="lime" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">Nutrition</p>
             <p className="text-xs text-muted-foreground">No calorie target set up yet.</p>
@@ -38,9 +37,7 @@ export function NutritionCard({
     <Card>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-            <Apple className="size-4 text-muted-foreground" />
-          </div>
+          <IconBadge icon={Apple} tone="lime" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">Nutrition</p>
             <p className="text-xs text-muted-foreground">

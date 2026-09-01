@@ -3,6 +3,7 @@ import { ArrowRight, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { RadialProgress } from "@/components/radial-progress";
 import { summarizeToday } from "@/lib/services/today-service";
 import { getTodayLogs, listHabits } from "@/lib/services/habit-service";
 import { listGoals } from "@/lib/services/goal-service";
@@ -45,25 +46,24 @@ export default async function DashboardPage() {
 
       <Card>
         <CardContent className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Today&apos;s score</p>
-            <p className="text-3xl font-semibold tracking-tight">
-              {scorePct != null ? `${scorePct}%` : "—"}
-            </p>
-            {summary.totalCount > 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {summary.completedCount} of {summary.totalCount} habits done
-              </p>
-            ) : null}
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="w-28">
-              <Progress value={scorePct ?? 0} />
+          <div className="flex items-center gap-4">
+            <RadialProgress value={scorePct ?? 0}>
+              <span className="text-lg font-semibold tracking-tight">
+                {scorePct != null ? `${scorePct}%` : "—"}
+              </span>
+            </RadialProgress>
+            <div>
+              <p className="text-sm text-muted-foreground">Today&apos;s score</p>
+              {summary.totalCount > 0 ? (
+                <p className="text-sm font-medium">
+                  {summary.completedCount} of {summary.totalCount} habits done
+                </p>
+              ) : null}
             </div>
-            <Button size="sm" variant="outline" nativeButton={false} render={<Link href="/today" />}>
-              Go to Today <ArrowRight className="size-4" />
-            </Button>
           </div>
+          <Button size="sm" variant="outline" nativeButton={false} render={<Link href="/today" />}>
+            Go to Today <ArrowRight className="size-4" />
+          </Button>
         </CardContent>
       </Card>
 
@@ -103,7 +103,7 @@ export default async function DashboardPage() {
                     {h.icon || "•"}
                   </div>
                   <p className="flex-1 truncate text-sm font-medium">{h.name}</p>
-                  <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <p className="flex items-center gap-1 text-sm font-medium text-orange-600 dark:text-orange-400">
                     <Flame className="size-4" />
                     {h.streak.currentStreak}d
                   </p>
