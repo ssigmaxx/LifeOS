@@ -13,11 +13,13 @@ import type {
 import { EventCalendar } from "@/registry/components/event-calendar";
 import type { Calendar, CalendarEvent } from "@/lib/services/calendar-service";
 import type { GoalCalendarEvent } from "@/lib/services/goal-service";
-import { GOAL_EVENT_COLOR } from "@/lib/calendar-constants";
+import type { TodoCalendarEvent } from "@/lib/services/todo-service";
+import { GOAL_EVENT_COLOR, TODO_EVENT_COLOR } from "@/lib/calendar-constants";
 import { updateEventTimesAction } from "./actions";
 import { EventFormDialog } from "./event-form-dialog";
 import { EventDetailDialog } from "./event-detail-dialog";
 import { GoalEventDialog } from "./goal-event-dialog";
+import { TodoEventDialog } from "./todo-event-dialog";
 
 function toEventInput(event: CalendarEvent): EventInput {
   return {
@@ -47,6 +49,18 @@ function toGoalEventInput(event: GoalCalendarEvent): EventInput {
     editable: false,
     color: GOAL_EVENT_COLOR,
     extendedProps: { source: "goal", goalEvent: event },
+  };
+}
+
+function toTodoEventInput(event: TodoCalendarEvent): EventInput {
+  return {
+    id: `todo-${event.id}`,
+    title: event.completed ? `✓ ${event.title}` : `☐ ${event.title}`,
+    start: event.date,
+    allDay: true,
+    editable: false,
+    color: TODO_EVENT_COLOR,
+    extendedProps: { source: "todo", todoEvent: event },
   };
 }
 
@@ -87,6 +101,8 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedGoalEvent, setSelectedGoalEvent] = useState<GoalCalendarEvent | null>(null);
   const [goalDetailOpen, setGoalDetailOpen] = useState(false);
+  const [selectedTodoEvent, setSelectedTodoEvent] = useState<TodoCalendarEvent | null>(null);
+  const [todoDetailOpen, setTodoDetailOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [draftStart, setDraftStart] = useState<string | undefined>(undefined);
   const [draftEnd, setDraftEnd] = useState<string | undefined>(undefined);
@@ -108,20 +124,27 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
     if (typeof window === "undefined") return [];
 
     const params = new URLSearchParams({ start: info.startStr, end: info.endStr });
-    const [eventsResponse, goalEventsResponse] = await Promise.all([
+    const [eventsResponse, goalEventsResponse, todoEventsResponse] = await Promise.all([
       fetch(`/api/calendar/events?${params}`),
       fetch(`/api/calendar/goal-events?${params}`),
+      fetch(`/api/calendar/todo-events?${params}`),
     ]);
     if (!eventsResponse.ok) throw new Error("Failed to load events");
     const events: CalendarEvent[] = await eventsResponse.json();
     const goalEvents: GoalCalendarEvent[] = goalEventsResponse.ok ? await goalEventsResponse.json() : [];
-    return [...events.map(toEventInput), ...goalEvents.map(toGoalEventInput)];
+    const todoEvents: TodoCalendarEvent[] = todoEventsResponse.ok ? await todoEventsResponse.json() : [];
+    return [...events.map(toEventInput), ...goalEvents.map(toGoalEventInput), ...todoEvents.map(toTodoEventInput)];
   }, []);
 
   const handleEventClick = useCallback((info: EventClickInfo) => {
     if (info.event.extendedProps.source === "goal") {
       setSelectedGoalEvent(info.event.extendedProps.goalEvent as GoalCalendarEvent);
       setGoalDetailOpen(true);
+      return;
+    }
+    if (info.event.extendedProps.source === "todo") {
+      setSelectedTodoEvent(info.event.extendedProps.todoEvent as TodoCalendarEvent);
+      setTodoDetailOpen(true);
       return;
     }
     setSelectedEvent(fromEventApi(info.event));
@@ -184,6 +207,7 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
       />
       <EventDetailDialog event={selectedEvent} open={detailOpen} onOpenChange={setDetailOpen} />
       <GoalEventDialog event={selectedGoalEvent} open={goalDetailOpen} onOpenChange={setGoalDetailOpen} />
+      <TodoEventDialog event={selectedTodoEvent} open={todoDetailOpen} onOpenChange={setTodoDetailOpen} />
     </>
   );
 }

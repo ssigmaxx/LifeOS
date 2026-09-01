@@ -93,6 +93,34 @@ export async function deleteTodo(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export type TodoCalendarEvent = {
+  id: string;
+  title: string;
+  /** ISO date — the todo's due date. */
+  date: string;
+  completed: boolean;
+};
+
+// Read-only calendar layer, same idea as goal-service.ts's
+// listGoalCalendarEvents — todos with a due date show up on the Calendar
+// without becoming real calendar_events rows. See /api/calendar/todo-events.
+export async function listTodoCalendarEvents(startISO: string, endISO: string): Promise<TodoCalendarEvent[]> {
+  const { supabase, userId } = await requireUserId();
+  const startDate = startISO.slice(0, 10);
+  const endDate = endISO.slice(0, 10);
+
+  const { data, error } = await supabase
+    .from("todos")
+    .select("id, title, due_date, completed")
+    .eq("user_id", userId)
+    .not("due_date", "is", null)
+    .gte("due_date", startDate)
+    .lte("due_date", endDate);
+  if (error) throw error;
+
+  return data.map((row) => ({ id: row.id, title: row.title, date: row.due_date!, completed: row.completed }));
+}
+
 export type TodoCompletion = { completed: boolean };
 
 export async function getTodosDueOnDate(date: string = todayISO()): Promise<TodoCompletion[]> {

@@ -24,3 +24,7 @@ export const DEFAULT_CALENDAR_COLOR: string = CALENDAR_COLOR_PALETTE[7];
 // "derived/informational" rather than "just another calendar you can pick",
 // since goal milestones and target dates aren't real editable events.
 export const GOAL_EVENT_COLOR = "#c9a227";
+
+// Same reasoning as GOAL_EVENT_COLOR, but a distinct neutral slate so todos
+// and goals read as two different derived layers at a glance.
+export const TODO_EVENT_COLOR = "#64748b";
