@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Settings2, TriangleAlert } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,9 @@ function PeriodBar({
         <span>{label}</span>
         <span className="tabular-nums">
           {formatCurrency(spent)} / {formatCurrency(budget)}
+          {isOver ? (
+            <span className="ml-1.5 font-medium text-destructive">+{formatCurrency(overBy)} over</span>
+          ) : null}
         </span>
       </div>
       <Progress value={pct} className={cn(isOver && "[&_[data-slot=progress-indicator]]:bg-destructive")} />
@@ -35,7 +38,6 @@ function PeriodBar({
 }
 
 export function BudgetCategoryRow({ status }: { status: CategoryBudgetStatus }) {
-  const isOver = status.weekOverBy != null || status.monthOverBy != null;
   const hasAnyBudget = status.weekBudget != null || status.monthBudget != null;
 
   return (
@@ -71,15 +73,7 @@ export function BudgetCategoryRow({ status }: { status: CategoryBudgetStatus }) 
         </div>
       ) : null}
 
-      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-        {isOver ? (
-          <span className="flex items-center gap-1 text-destructive">
-            <TriangleAlert className="size-3" />
-            over {status.weekOverBy != null ? "this week's plan" : "this month's max"}
-          </span>
-        ) : (
-          <span />
-        )}
+      <div className="flex items-center justify-end text-xs text-muted-foreground">
         <Link href="/carbon" className="hover:underline">
           {status.co2eKg.toFixed(1)} kg CO₂e this month
         </Link>

@@ -12,16 +12,16 @@ const RANGES: { value: RangePreset; label: string }[] = [
 
 export function RangeSelector({ current }: { current: RangePreset }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="inline-flex flex-wrap gap-0.5 rounded-full bg-muted p-[3px]">
       {RANGES.map((r) => (
         <Link
           key={r.value}
           href={`/analytics?range=${r.value}`}
           className={cn(
-            "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            "rounded-full px-3 py-1 text-sm font-medium transition-colors",
             r.value === current
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:bg-accent",
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           {r.label}

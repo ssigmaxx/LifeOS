@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { calculateStreaks, type StreakResult } from "@/lib/streaks";
+import { buildRecentDayLevels, calculateStreaks, type DayLevel, type StreakResult } from "@/lib/streaks";
 import { isLogComplete, type TrackingType } from "@/lib/habit-completion";
 import type { HabitFormValues } from "@/lib/validations/habit";
 
@@ -25,8 +25,11 @@ export type Habit = {
   endDate: string | null;
   scheduleWeekdays: number[];
   streak: StreakResult;
+  recentDays: { date: string; level: DayLevel }[];
   sharedWithFriends: boolean;
 };
+
+const RECENT_DAYS_WINDOW = 70; // 10 weeks, to fit a compact heatmap
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -129,6 +132,14 @@ export async function listHabits(): Promise<Habit[]> {
       today,
     });
 
+    const recentDays = buildRecentDayLevels({
+      logs,
+      scheduleWeekdays: scheduleByHabit.get(row.id) ?? [],
+      startDate: row.start_date,
+      today,
+      days: RECENT_DAYS_WINDOW,
+    });
+
     return {
       id: row.id,
       categoryId: row.category_id,
@@ -144,6 +155,7 @@ export async function listHabits(): Promise<Habit[]> {
       endDate: row.end_date,
       scheduleWeekdays: scheduleByHabit.get(row.id) ?? [],
       streak,
+      recentDays,
       sharedWithFriends: row.shared_with_friends,
     };
   });

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Flame, MoreVertical, Pencil, Archive, Play, Pause, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Archive, Play, Pause, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { StreakBadge } from "@/components/streak-badge";
+import { StreakHeatmap } from "@/components/streak-heatmap";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,57 +64,62 @@ export function HabitCard({
 
   return (
     <Card className={!habit.isActive ? "opacity-60" : undefined}>
-      <CardContent className="flex items-center gap-3 py-1">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-lg">
-          {habit.icon || "•"}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate font-medium">{habit.name}</span>
-            {category ? (
-              <Badge variant="secondary" className="shrink-0">
-                {category.name}
-              </Badge>
-            ) : null}
+      <CardContent className="space-y-2 py-2">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-lg">
+            {habit.icon || "•"}
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-            <span>{scheduleLabel}</span>
-            <span className="inline-flex items-center gap-1">
-              <Flame className="size-3.5" />
-              {habit.streak.currentStreak} day streak
-            </span>
-            <span>{Math.round(habit.streak.completionRate * 100)}% completion</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="truncate font-medium">{habit.name}</span>
+              {category ? (
+                <Badge variant="secondary" className="shrink-0">
+                  {category.name}
+                </Badge>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <span>{scheduleLabel}</span>
+              <StreakBadge days={habit.streak.currentStreak} />
+              <span>{Math.round(habit.streak.completionRate * 100)}% completion</span>
+            </div>
           </div>
+
+          {habit.isActive ? <LogControl habit={habit} todayLog={todayLog} /> : null}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Habit options" />}>
+              <MoreVertical className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                <Pencil className="size-4" /> Edit
+              </DropdownMenuItem>
+              {habit.isActive ? (
+                <DropdownMenuItem onClick={() => pauseHabitAction(habit.id)}>
+                  <Pause className="size-4" /> Pause
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={() => resumeHabitAction(habit.id)}>
+                  <Play className="size-4" /> Resume
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => archiveHabitAction(habit.id)}>
+                <Archive className="size-4" /> Archive
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
+                <Trash2 className="size-4" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {habit.isActive ? <LogControl habit={habit} todayLog={todayLog} /> : null}
-
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Habit options" />}>
-            <MoreVertical className="size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setEditOpen(true)}>
-              <Pencil className="size-4" /> Edit
-            </DropdownMenuItem>
-            {habit.isActive ? (
-              <DropdownMenuItem onClick={() => pauseHabitAction(habit.id)}>
-                <Pause className="size-4" /> Pause
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem onClick={() => resumeHabitAction(habit.id)}>
-                <Play className="size-4" /> Resume
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onClick={() => archiveHabitAction(habit.id)}>
-              <Archive className="size-4" /> Archive
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="size-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {habit.isActive ? (
+          <div className="pl-12">
+            <StreakHeatmap days={habit.recentDays} />
+          </div>
+        ) : null}
       </CardContent>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

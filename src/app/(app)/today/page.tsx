@@ -4,6 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { RadialProgress } from "@/components/radial-progress";
+import { RingCluster, RingLegend } from "@/components/ring-cluster";
+import { StatTileRow } from "@/components/stat-tile";
+import { formatMinutes } from "@/lib/format";
 import { getTodaySummary } from "@/lib/services/today-service";
 import { getTodayWater } from "@/lib/services/water-service";
 import { getLatestSleep } from "@/lib/services/sleep-service";
@@ -69,6 +72,13 @@ export default async function TodayPage() {
   });
   const scorePct = summary.score != null ? Math.round(summary.score * 100) : null;
 
+  const habitsPct = summary.totalCount > 0 ? summary.completedCount / summary.totalCount : 0;
+  const waterPct = water.targetMl > 0 ? water.totalMl / water.targetMl : 0;
+  const rings = [
+    { label: "Habits", value: habitsPct, valueLabel: summary.totalCount > 0 ? `${summary.completedCount}/${summary.totalCount}` : "—" },
+    { label: "Water", value: waterPct, valueLabel: `${(water.totalMl / 1000).toFixed(1)}/${(water.targetMl / 1000).toFixed(1)}L` },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -79,25 +89,59 @@ export default async function TodayPage() {
       </div>
 
       <Card>
-        <CardContent className="flex items-center gap-4">
-          <RadialProgress value={scorePct ?? 0}>
-            <span className="text-lg font-semibold tracking-tight">
-              {scorePct != null ? `${scorePct}%` : "—"}
-            </span>
-          </RadialProgress>
-          <div>
-            <p className="text-sm text-muted-foreground">Today&apos;s score</p>
-            {summary.totalCount > 0 ? (
-              <p className="text-sm font-medium">
-                {summary.completedCount} of {summary.totalCount} habits done
-              </p>
-            ) : null}
-            <Link href="/recap" className="text-xs text-muted-foreground hover:underline">
-              See today&apos;s recap →
-            </Link>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <RadialProgress value={scorePct ?? 0}>
+              <span className="text-lg font-semibold tracking-tight">
+                {scorePct != null ? `${scorePct}%` : "—"}
+              </span>
+            </RadialProgress>
+            <div>
+              <p className="text-sm text-muted-foreground">Today&apos;s score</p>
+              {summary.totalCount > 0 ? (
+                <p className="text-sm font-medium">
+                  {summary.completedCount} of {summary.totalCount} habits done
+                </p>
+              ) : null}
+              <Link href="/recap" className="text-xs text-muted-foreground hover:underline">
+                See today&apos;s recap →
+              </Link>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <RingCluster rings={rings} size={88} strokeWidth={7} />
+            <RingLegend rings={rings} />
           </div>
         </CardContent>
       </Card>
+
+      <StatTileRow
+        tiles={[
+          {
+            label: "Sleep",
+            value: latestSleep ? formatMinutes(latestSleep.durationMinutes) : "—",
+            hint: latestSleep?.quality != null ? `${latestSleep.quality}/5 quality` : latestSleep ? undefined : "Not logged",
+            tone: "neutral",
+          },
+          {
+            label: "Meditation",
+            value: formatMinutes(meditation.totalMinutes),
+            hint: meditation.sessionCount > 0 ? `${meditation.sessionCount} session${meditation.sessionCount === 1 ? "" : "s"}` : "Not logged",
+            tone: "neutral",
+          },
+          {
+            label: "Workout",
+            value: workout?.completed ? formatMinutes(workout.durationMinutes ?? 0) : "—",
+            hint: workout?.workoutType ?? (workout?.completed ? undefined : "Not logged"),
+            tone: "neutral",
+          },
+          {
+            label: "CO₂e today",
+            value: `${footprint.totalCo2eKg.toFixed(1)} kg`,
+            tone: "neutral",
+          },
+        ]}
+      />
 
       <div className="space-y-2">
         <h2 className="text-sm font-medium text-muted-foreground">Habits</h2>

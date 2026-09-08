@@ -14,13 +14,17 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export type TodayMeditation = { totalMinutes: number; sessionCount: number };
+export type TodayMeditation = {
+  totalMinutes: number;
+  sessionCount: number;
+  lastLoggedAt: string | null;
+};
 
 export async function getTodayMeditation(): Promise<TodayMeditation> {
   const { supabase, userId } = await requireUserId();
   const { data, error } = await supabase
     .from("meditation_sessions")
-    .select("duration_minutes")
+    .select("duration_minutes, created_at")
     .eq("user_id", userId)
     .eq("session_date", todayISO());
   if (error) throw error;
@@ -28,6 +32,7 @@ export async function getTodayMeditation(): Promise<TodayMeditation> {
   return {
     totalMinutes: data.reduce((sum, s) => sum + s.duration_minutes, 0),
     sessionCount: data.length,
+    lastLoggedAt: data.length > 0 ? data.map((s) => s.created_at).sort().at(-1)! : null,
   };
 }
 

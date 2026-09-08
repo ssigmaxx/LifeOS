@@ -8,6 +8,12 @@ import { getDailyTotals, getNutritionProfile, type DailyTotals, type NutritionPr
 import { getTodayCarbonTotal } from "./carbon-service";
 import { getTodayEntries, type JournalEntry } from "./journal-service";
 
+export type RecapTimelineEntry =
+  | { time: string; kind: "water"; amountMl: number }
+  | { time: string; kind: "workout"; workoutType: string | null; durationMinutes: number | null }
+  | { time: string; kind: "meditation"; totalMinutes: number; sessionCount: number }
+  | { time: string; kind: "journal"; entryType: "morning" | "evening" };
+
 export type DailyRecap = {
   date: string;
   score: number | null;
@@ -20,7 +26,49 @@ export type DailyRecap = {
   carbonKg: number;
   journal: { morning: JournalEntry | null; evening: JournalEntry | null };
   summaryLine: string;
+  timeline: RecapTimelineEntry[];
 };
+
+// Built from timestamps already available on today's logs (only these four
+// domains expose one) — a real chronological feed, not every domain that
+// has a count above, and sorted since logs across tables aren't in order.
+function buildTimeline({
+  water,
+  meditation,
+  workout,
+  journal,
+}: {
+  water: TodayWater;
+  meditation: TodayMeditation;
+  workout: TodayWorkout;
+  journal: { morning: JournalEntry | null; evening: JournalEntry | null };
+}): RecapTimelineEntry[] {
+  const entries: RecapTimelineEntry[] = [];
+
+  for (const log of water.logs) {
+    entries.push({ time: log.loggedAt, kind: "water", amountMl: log.amountMl });
+  }
+  if (workout) {
+    entries.push({
+      time: workout.loggedAt,
+      kind: "workout",
+      workoutType: workout.workoutType,
+      durationMinutes: workout.durationMinutes,
+    });
+  }
+  if (meditation.lastLoggedAt) {
+    entries.push({
+      time: meditation.lastLoggedAt,
+      kind: "meditation",
+      totalMinutes: meditation.totalMinutes,
+      sessionCount: meditation.sessionCount,
+    });
+  }
+  if (journal.morning) entries.push({ time: journal.morning.createdAt, kind: "journal", entryType: "morning" });
+  if (journal.evening) entries.push({ time: journal.evening.createdAt, kind: "journal", entryType: "evening" });
+
+  return entries.sort((a, b) => a.time.localeCompare(b.time));
+}
 
 function buildSummaryLine(habits: { completed: number; total: number }, todos: { completed: number; total: number }): string {
   const parts: string[] = [];
@@ -66,5 +114,6 @@ export async function getDailyRecap(): Promise<DailyRecap> {
     carbonKg: carbonKg.totalCo2eKg,
     journal,
     summaryLine: buildSummaryLine(habits, todos),
+    timeline: buildTimeline({ water, meditation, workout, journal }),
   };
 }
