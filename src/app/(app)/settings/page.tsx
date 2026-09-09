@@ -27,7 +27,12 @@ export default async function SettingsPage() {
         initialPreferences={preferences}
         vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null}
       />
-      <CycleTrackingToggle initialEnabled={cycleTrackingEnabled} />
+      {/* Keyed on the value itself: CycleTrackingToggle seeds its own
+          useState(initialEnabled) on mount, so a plain prop change (e.g.
+          after ProfileForm's router.refresh() following a gender-driven
+          auto-enable) wouldn't otherwise be picked up by an
+          already-mounted instance — this forces a remount instead. */}
+      <CycleTrackingToggle key={String(cycleTrackingEnabled)} initialEnabled={cycleTrackingEnabled} />
 
       <Card>
         <CardHeader>
