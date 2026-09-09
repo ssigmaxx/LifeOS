@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { TOUR_DISMISS_KEY } from "@/components/onboarding-tour";
 
 const DISMISS_KEY = "lifeos-onboarding-dismissed";
 
@@ -22,9 +23,11 @@ function subscribe() {
   return () => {};
 }
 
+// Blocked until the tour's own dialog has been dismissed — otherwise a new
+// user would see two onboarding dialogs stacked on first load.
 function getSnapshot() {
   try {
-    return localStorage.getItem(DISMISS_KEY) === "1";
+    return localStorage.getItem(DISMISS_KEY) === "1" || localStorage.getItem(TOUR_DISMISS_KEY) !== "1";
   } catch {
     return false;
   }

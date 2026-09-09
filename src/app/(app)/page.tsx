@@ -11,6 +11,7 @@ import { getDailyScoreSeries, resolveRange } from "@/lib/services/analytics-serv
 import { getDailyTotals, getNutritionProfile } from "@/lib/services/nutrition-service";
 import { getTodosDueOnDate } from "@/lib/services/todo-service";
 import { OnboardingChecklist, type OnboardingStep } from "@/components/onboarding-checklist";
+import { OnboardingTour } from "@/components/onboarding-tour";
 import { ScoreTrendChart } from "./analytics/score-trend-chart";
 import { NutritionCard } from "./today/nutrition-card";
 
@@ -53,6 +54,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      <OnboardingTour />
       <OnboardingChecklist steps={onboardingSteps} />
 
       <Link href="/today" className="block">
