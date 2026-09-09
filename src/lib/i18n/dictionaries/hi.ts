@@ -6,6 +6,7 @@ export const hi: Dictionary = {
     today: "आज",
     habits: "आदतें",
     todos: "कार्य",
+    cycle: "चक्र",
     nutrition: "पोषण",
     carbon: "कार्बन फ़ुटप्रिंट",
     budget: "बजट",

@@ -7,6 +7,7 @@ export const en = {
     today: "Today",
     habits: "Habits",
     todos: "Todos",
+    cycle: "Cycle",
     nutrition: "Nutrition",
     carbon: "Carbon",
     budget: "Budget",

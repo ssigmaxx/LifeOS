@@ -40,14 +40,20 @@ export function AppSidebar({
   locale,
   nav,
   themeLabel,
+  cycleTrackingEnabled,
 }: {
   userEmail: string;
   locale: Locale;
   nav: NavDict;
   themeLabel: string;
+  cycleTrackingEnabled: boolean;
 }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const visibleSections = primaryNavSections.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => item.href !== "/cycle" || cycleTrackingEnabled),
+  }));
 
   return (
     <aside className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:border-r md:bg-sidebar md:text-sidebar-foreground">
@@ -62,7 +68,7 @@ export function AppSidebar({
         <CommandPaletteTrigger />
       </div>
       <nav className="flex-1 space-y-4 px-3">
-        {primaryNavSections.map((section) => (
+        {visibleSections.map((section) => (
           <div key={section.labelKey} className="space-y-1">
             <p className="px-3 text-xs font-medium tracking-wide text-sidebar-foreground/50 uppercase">
               {nav[section.labelKey]}

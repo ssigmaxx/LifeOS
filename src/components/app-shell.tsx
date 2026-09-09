@@ -13,16 +13,24 @@ export function AppShell({
   userEmail,
   locale,
   dict,
+  cycleTrackingEnabled,
 }: {
   children: ReactNode;
   userEmail: string;
   locale: Locale;
   dict: Dictionary;
+  cycleTrackingEnabled: boolean;
 }) {
   return (
     <CommandPaletteProvider>
       <div className="flex min-h-svh w-full">
-        <AppSidebar userEmail={userEmail} locale={locale} nav={dict.nav} themeLabel={dict.common.theme} />
+        <AppSidebar
+          userEmail={userEmail}
+          locale={locale}
+          nav={dict.nav}
+          themeLabel={dict.common.theme}
+          cycleTrackingEnabled={cycleTrackingEnabled}
+        />
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex h-14 items-center justify-between gap-2 border-b px-4 md:hidden">
             <div className="flex items-center gap-2">
@@ -41,7 +49,7 @@ export function AppShell({
             </div>
           </main>
         </div>
-        <MobileNav userEmail={userEmail} nav={dict.nav} />
+        <MobileNav userEmail={userEmail} nav={dict.nav} cycleTrackingEnabled={cycleTrackingEnabled} />
       </div>
     </CommandPaletteProvider>
   );

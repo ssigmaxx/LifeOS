@@ -6,6 +6,7 @@ export const de: Dictionary = {
     today: "Heute",
     habits: "Gewohnheiten",
     todos: "Aufgaben",
+    cycle: "Zyklus",
     nutrition: "Ernährung",
     carbon: "CO₂-Bilanz",
     budget: "Budget",

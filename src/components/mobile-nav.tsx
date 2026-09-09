@@ -20,10 +20,19 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 // see the comment in app-sidebar.tsx for why the full Dictionary can't.
 type NavDict = Dictionary["nav"];
 
-export function MobileNav({ userEmail, nav }: { userEmail: string; nav: NavDict }) {
+export function MobileNav({
+  userEmail,
+  nav,
+  cycleTrackingEnabled,
+}: {
+  userEmail: string;
+  nav: NavDict;
+  cycleTrackingEnabled: boolean;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const moreActive = moreNav.some((item) => pathname.startsWith(item.href));
+  const visibleMoreNav = moreNav.filter((item) => item.href !== "/cycle" || cycleTrackingEnabled);
+  const moreActive = visibleMoreNav.some((item) => pathname.startsWith(item.href));
 
   return (
     <nav
@@ -67,7 +76,7 @@ export function MobileNav({ userEmail, nav }: { userEmail: string; nav: NavDict 
             <SheetTitle>{nav.more}</SheetTitle>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-3 px-4">
-            {moreNav.map((item) => (
+            {visibleMoreNav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
