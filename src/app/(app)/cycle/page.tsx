@@ -8,11 +8,12 @@ import {
   getCycleLog,
   isCycleTrackingEnabled,
   listCycleLogs,
+  listPeriodDates,
   predictNextPeriod,
   type CycleLog,
 } from "@/lib/services/cycle-service";
+import { CycleCalendar } from "./cycle-calendar";
 import { CycleLogForm } from "./cycle-log-form";
-import { DateNav } from "./date-nav";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -74,21 +75,19 @@ export default async function CyclePage({
   const { date: dateParam } = await searchParams;
   const date = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam <= todayISO() ? dateParam : todayISO();
 
-  const [log, history, prediction] = await Promise.all([
+  const [log, history, periodDates, prediction] = await Promise.all([
     getCycleLog(date),
     listCycleLogs({ start: isoDaysAgo(90) }),
+    listPeriodDates({ start: isoDaysAgo(400), end: todayISO() }),
     predictNextPeriod(),
   ]);
   const loggedHistory = history.filter(hasAnyData);
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Cycle</h1>
-          <p className="text-sm text-muted-foreground">Period, birth control, mood, and pain tracking.</p>
-        </div>
-        <DateNav date={date} />
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Cycle</h1>
+        <p className="text-sm text-muted-foreground">Period, birth control, mood, and pain tracking.</p>
       </div>
 
       <Card className="border-pink-500/30 bg-pink-500/5">
@@ -114,7 +113,14 @@ export default async function CyclePage({
         </CardContent>
       </Card>
 
-      <CycleLogForm key={date} date={date} log={log} />
+      <div className="grid gap-6 md:grid-cols-5">
+        <div className="md:col-span-2">
+          <CycleCalendar selectedDate={date} periodDates={periodDates} />
+        </div>
+        <div className="md:col-span-3">
+          <CycleLogForm key={date} date={date} log={log} />
+        </div>
+      </div>
 
       <div className="space-y-2">
         <h2 className="text-sm font-medium text-muted-foreground">Last 90 days</h2>

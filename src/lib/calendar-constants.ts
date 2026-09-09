@@ -28,3 +28,9 @@ export const GOAL_EVENT_COLOR = "#c9a227";
 // Same reasoning as GOAL_EVENT_COLOR, but a distinct neutral slate so todos
 // and goals read as two different derived layers at a glance.
 export const TODO_EVENT_COLOR = "#64748b";
+
+// Matches the pink used to theme the Cycle nav item / page elsewhere
+// (Tailwind's pink-500), not the palette's own "pink" (#ff2d55) above —
+// keeps the cycle-tracking feature visually consistent with itself
+// wherever it shows up, distinct from a user-pickable calendar color.
+export const CYCLE_EVENT_COLOR = "#ec4899";

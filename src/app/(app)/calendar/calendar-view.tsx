@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type {
   DateSelectInfo,
   EventApi,
@@ -14,7 +15,7 @@ import { EventCalendar } from "@/registry/components/event-calendar";
 import type { Calendar, CalendarEvent } from "@/lib/services/calendar-service";
 import type { GoalCalendarEvent } from "@/lib/services/goal-service";
 import type { TodoCalendarEvent } from "@/lib/services/todo-service";
-import { GOAL_EVENT_COLOR, TODO_EVENT_COLOR } from "@/lib/calendar-constants";
+import { CYCLE_EVENT_COLOR, GOAL_EVENT_COLOR, TODO_EVENT_COLOR } from "@/lib/calendar-constants";
 import { updateEventTimesAction } from "./actions";
 import { EventFormDialog } from "./event-form-dialog";
 import { EventDetailDialog } from "./event-detail-dialog";
@@ -64,6 +65,18 @@ function toTodoEventInput(event: TodoCalendarEvent): EventInput {
   };
 }
 
+function toCycleEventInput(date: string): EventInput {
+  return {
+    id: `cycle-${date}`,
+    title: "Period",
+    start: date,
+    allDay: true,
+    editable: false,
+    color: CYCLE_EVENT_COLOR,
+    extendedProps: { source: "cycle", cycleDate: date },
+  };
+}
+
 function fromEventApi(event: EventApi): CalendarEvent {
   const props = event.extendedProps as {
     calendarId: string;
@@ -97,6 +110,7 @@ async function persistTimeChange(id: string, start: Date, end: Date | null, reve
 }
 
 export function CalendarView({ calendars }: { calendars: Calendar[] }) {
+  const router = useRouter();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedGoalEvent, setSelectedGoalEvent] = useState<GoalCalendarEvent | null>(null);
@@ -124,32 +138,46 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
     if (typeof window === "undefined") return [];
 
     const params = new URLSearchParams({ start: info.startStr, end: info.endStr });
-    const [eventsResponse, goalEventsResponse, todoEventsResponse] = await Promise.all([
+    const [eventsResponse, goalEventsResponse, todoEventsResponse, cycleEventsResponse] = await Promise.all([
       fetch(`/api/calendar/events?${params}`),
       fetch(`/api/calendar/goal-events?${params}`),
       fetch(`/api/calendar/todo-events?${params}`),
+      fetch(`/api/calendar/cycle-events?${params}`),
     ]);
     if (!eventsResponse.ok) throw new Error("Failed to load events");
     const events: CalendarEvent[] = await eventsResponse.json();
     const goalEvents: GoalCalendarEvent[] = goalEventsResponse.ok ? await goalEventsResponse.json() : [];
     const todoEvents: TodoCalendarEvent[] = todoEventsResponse.ok ? await todoEventsResponse.json() : [];
-    return [...events.map(toEventInput), ...goalEvents.map(toGoalEventInput), ...todoEvents.map(toTodoEventInput)];
+    const cycleDates: string[] = cycleEventsResponse.ok ? await cycleEventsResponse.json() : [];
+    return [
+      ...events.map(toEventInput),
+      ...goalEvents.map(toGoalEventInput),
+      ...todoEvents.map(toTodoEventInput),
+      ...cycleDates.map(toCycleEventInput),
+    ];
   }, []);
 
-  const handleEventClick = useCallback((info: EventClickInfo) => {
-    if (info.event.extendedProps.source === "goal") {
-      setSelectedGoalEvent(info.event.extendedProps.goalEvent as GoalCalendarEvent);
-      setGoalDetailOpen(true);
-      return;
-    }
-    if (info.event.extendedProps.source === "todo") {
-      setSelectedTodoEvent(info.event.extendedProps.todoEvent as TodoCalendarEvent);
-      setTodoDetailOpen(true);
-      return;
-    }
-    setSelectedEvent(fromEventApi(info.event));
-    setDetailOpen(true);
-  }, []);
+  const handleEventClick = useCallback(
+    (info: EventClickInfo) => {
+      if (info.event.extendedProps.source === "goal") {
+        setSelectedGoalEvent(info.event.extendedProps.goalEvent as GoalCalendarEvent);
+        setGoalDetailOpen(true);
+        return;
+      }
+      if (info.event.extendedProps.source === "todo") {
+        setSelectedTodoEvent(info.event.extendedProps.todoEvent as TodoCalendarEvent);
+        setTodoDetailOpen(true);
+        return;
+      }
+      if (info.event.extendedProps.source === "cycle") {
+        router.push(`/cycle?date=${info.event.extendedProps.cycleDate as string}`);
+        return;
+      }
+      setSelectedEvent(fromEventApi(info.event));
+      setDetailOpen(true);
+    },
+    [router],
+  );
 
   const handleSelect = useCallback((info: DateSelectInfo) => {
     setDraftStart(info.start.toISOString());

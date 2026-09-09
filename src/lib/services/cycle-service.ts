@@ -129,6 +129,23 @@ export async function upsertCycleLog(date: string, input: CycleLogInput): Promis
   if (error) throw error;
 }
 
+// Just the dates with a logged period in range — used for calendar
+// marking (both the mini month calendar on /cycle and the pink events on
+// the main /calendar), which only needs the date, not the full log.
+export async function listPeriodDates(range: { start: string; end: string }): Promise<string[]> {
+  const { supabase, userId } = await requireUserId();
+  const { data, error } = await supabase
+    .from("cycle_logs")
+    .select("log_date")
+    .eq("user_id", userId)
+    .not("period_flow", "is", null)
+    .gte("log_date", range.start)
+    .lte("log_date", range.end)
+    .order("log_date");
+  if (error) throw error;
+  return data.map((row) => row.log_date as string);
+}
+
 export async function deleteCycleLog(date: string): Promise<void> {
   const { supabase, userId } = await requireUserId();
   const { error } = await supabase
