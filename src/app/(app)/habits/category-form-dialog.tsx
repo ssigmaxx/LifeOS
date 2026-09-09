@@ -19,7 +19,12 @@ import { createCategoryAction, type FormActionState } from "./actions";
 
 const initialState: FormActionState = { error: null };
 
-export function CategoryFormDialog({ dict }: { dict: Dictionary }) {
+// Only this plain-string slice crosses the Server->Client boundary — the
+// full Dictionary has function values elsewhere in its tree, which React
+// can't serialize as a Client Component prop.
+type CategoryDialogDict = Dictionary["habits"]["categoryDialog"];
+
+export function CategoryFormDialog({ dict }: { dict: CategoryDialogDict }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(createCategoryAction, initialState);
 
@@ -37,16 +42,16 @@ export function CategoryFormDialog({ dict }: { dict: Dictionary }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <Plus className="size-4" /> {dict.habits.categoryDialog.trigger}
+        <Plus className="size-4" /> {dict.trigger}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>{dict.habits.categoryDialog.newTitle}</DialogTitle>
-          <DialogDescription>{dict.habits.categoryDialog.newDescription}</DialogDescription>
+          <DialogTitle>{dict.newTitle}</DialogTitle>
+          <DialogDescription>{dict.newDescription}</DialogDescription>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="categoryName">{dict.habits.categoryDialog.nameLabel}</Label>
+            <Label htmlFor="categoryName">{dict.nameLabel}</Label>
             <Input id="categoryName" name="name" required maxLength={50} autoFocus />
           </div>
           {state.error ? (
@@ -56,7 +61,7 @@ export function CategoryFormDialog({ dict }: { dict: Dictionary }) {
           ) : null}
           <DialogFooter>
             <Button type="submit" disabled={isPending}>
-              {isPending ? dict.habits.categoryDialog.creating : dict.habits.categoryDialog.create}
+              {isPending ? dict.creating : dict.create}
             </Button>
           </DialogFooter>
         </form>

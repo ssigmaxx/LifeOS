@@ -22,7 +22,7 @@ export function AppShell({
   return (
     <CommandPaletteProvider>
       <div className="flex min-h-svh w-full">
-        <AppSidebar userEmail={userEmail} locale={locale} dict={dict} />
+        <AppSidebar userEmail={userEmail} locale={locale} nav={dict.nav} themeLabel={dict.common.theme} />
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex h-14 items-center justify-between gap-2 border-b px-4 md:hidden">
             <div className="flex items-center gap-2">
@@ -41,7 +41,7 @@ export function AppShell({
             </div>
           </main>
         </div>
-        <MobileNav userEmail={userEmail} dict={dict} />
+        <MobileNav userEmail={userEmail} nav={dict.nav} />
       </div>
     </CommandPaletteProvider>
   );
