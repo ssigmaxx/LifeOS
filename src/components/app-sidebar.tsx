@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { primaryNavSections, settingsNavItem, type NavItem } from "@/lib/nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NavUser } from "@/components/nav-user";
+import { CommandPaletteTrigger } from "@/components/command-palette";
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
@@ -34,6 +35,9 @@ export function AppSidebar({ userEmail }: { userEmail: string }) {
       <div className="flex h-16 items-center gap-2 px-6">
         <Sparkles className="size-5 text-primary" />
         <span className="text-lg font-semibold tracking-tight">LifeOS</span>
+      </div>
+      <div className="px-3 pb-3">
+        <CommandPaletteTrigger />
       </div>
       <nav className="flex-1 space-y-4 px-3">
         {primaryNavSections.map((section) => (
