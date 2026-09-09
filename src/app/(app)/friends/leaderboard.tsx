@@ -1,6 +1,6 @@
-import { Flame } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { StreakBadge } from "@/components/streak-badge";
 import { cn } from "@/lib/utils";
 import type { LeaderboardEntry } from "@/lib/services/friend-service";
 
@@ -32,7 +32,10 @@ export function Leaderboard({ entries }: { entries: LeaderboardEntry[] }) {
       <Card>
         <CardContent className="divide-y py-0">
           {ranked.map((entry, i) => (
-            <div key={entry.id} className="flex items-center gap-3 py-2.5">
+            <div
+              key={entry.id}
+              className={cn("flex items-center gap-3 py-2.5", entry.isSelf && "-mx-4 bg-muted px-4")}
+            >
               <RankBadge rank={i + 1} />
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex items-center justify-between gap-2">
@@ -43,11 +46,7 @@ export function Leaderboard({ entries }: { entries: LeaderboardEntry[] }) {
                 </div>
                 <Progress value={Math.round(entry.avgCompletionRate! * 100)} />
               </div>
-              {entry.bestStreak > 0 ? (
-                <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-                  <Flame className="size-3.5" /> {entry.bestStreak}d
-                </span>
-              ) : null}
+              <StreakBadge days={entry.bestStreak} className="shrink-0" />
             </div>
           ))}
           {unranked.map((entry) => (

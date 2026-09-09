@@ -24,6 +24,7 @@ export type JournalEntry = {
   mood: number | null;
   text: string | null;
   extra: Record<string, string>;
+  createdAt: string;
 };
 
 function mapRow(row: {
@@ -33,6 +34,7 @@ function mapRow(row: {
   mood: number | null;
   text: string | null;
   extra: Record<string, string> | null;
+  created_at: string;
 }): JournalEntry {
   return {
     id: row.id,
@@ -41,6 +43,7 @@ function mapRow(row: {
     mood: row.mood,
     text: row.text,
     extra: row.extra ?? {},
+    createdAt: row.created_at,
   };
 }
 
@@ -51,7 +54,7 @@ export async function getTodayEntries(): Promise<{
   const { supabase, userId } = await requireUserId();
   const { data, error } = await supabase
     .from("journal_entries")
-    .select("id, entry_date, entry_type, mood, text, extra")
+    .select("id, entry_date, entry_type, mood, text, extra, created_at")
     .eq("user_id", userId)
     .eq("entry_date", todayISO());
   if (error) throw error;
@@ -126,7 +129,7 @@ export async function listJournalEntries(options: {
   const { supabase, userId } = await requireUserId();
   let query = supabase
     .from("journal_entries")
-    .select("id, entry_date, entry_type, mood, text, extra")
+    .select("id, entry_date, entry_type, mood, text, extra, created_at")
     .eq("user_id", userId)
     .order("entry_date", { ascending: false })
     .order("entry_type", { ascending: true })

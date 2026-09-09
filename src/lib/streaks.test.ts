@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildRecentDayLevels,
   calculateRangeCompletion,
   calculateStreaks,
   isHabitDueToday,
@@ -136,6 +137,43 @@ describe("calculateStreaks", () => {
     expect(result.totalScheduled).toBe(3);
     expect(result.totalCompleted).toBe(2);
     expect(result.completionRate).toBeCloseTo(2 / 3);
+  });
+});
+
+describe("buildRecentDayLevels", () => {
+  it("marks completed scheduled days as done and missed scheduled days as missed", () => {
+    const result = buildRecentDayLevels({
+      logs: [
+        { logDate: "2026-08-01", completed: true },
+        { logDate: "2026-08-02", completed: false },
+      ],
+      scheduleWeekdays: null,
+      startDate: "2026-08-01",
+      today: "2026-08-03",
+      days: 3,
+    });
+    expect(result).toEqual([
+      { date: "2026-08-01", level: "done" },
+      { date: "2026-08-02", level: "missed" },
+      { date: "2026-08-03", level: "empty" }, // today, not logged yet
+    ]);
+  });
+
+  it("marks days before startDate and unscheduled weekdays as empty", () => {
+    const result = buildRecentDayLevels({
+      logs: [{ logDate: "2026-08-19", completed: true }], // Wed
+      scheduleWeekdays: [3], // Wed only
+      startDate: "2026-08-18",
+      today: "2026-08-20",
+      days: 5, // 08-16 .. 08-20
+    });
+    expect(result).toEqual([
+      { date: "2026-08-16", level: "empty" }, // before startDate
+      { date: "2026-08-17", level: "empty" }, // before startDate
+      { date: "2026-08-18", level: "empty" }, // not scheduled (Tue)
+      { date: "2026-08-19", level: "done" }, // Wed, completed
+      { date: "2026-08-20", level: "empty" }, // not scheduled (Thu)
+    ]);
   });
 });
 

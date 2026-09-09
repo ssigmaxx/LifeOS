@@ -116,6 +116,52 @@ export function calculateRangeCompletion({
   };
 }
 
+export type DayLevel = "empty" | "missed" | "done";
+
+/**
+ * The last `days` calendar days as a completion calendar, for a per-habit
+ * heatmap. "empty" covers both "not scheduled" and "not due yet" (before
+ * startDate, or today before it's logged) — there's no meaningful
+ * miss/hit signal for those, so they render as blank rather than red.
+ */
+export function buildRecentDayLevels({
+  logs,
+  scheduleWeekdays,
+  startDate,
+  today,
+  days,
+}: {
+  logs: readonly HabitLogEntry[];
+  scheduleWeekdays: readonly number[] | null | undefined;
+  startDate: string;
+  today: string;
+  days: number;
+}): { date: string; level: DayLevel }[] {
+  const completedByDate = new Map(logs.map((log) => [log.logDate, log.completed]));
+  const end = parseISODate(today);
+  const start = addDays(end, -(days - 1));
+
+  const result: { date: string; level: DayLevel }[] = [];
+  for (let cursor = start; cursor <= end; cursor = addDays(cursor, 1)) {
+    const dateKey = formatISODate(cursor);
+
+    if (dateKey < startDate || !isScheduledOn(cursor, scheduleWeekdays)) {
+      result.push({ date: dateKey, level: "empty" });
+      continue;
+    }
+
+    if (completedByDate.get(dateKey) === true) {
+      result.push({ date: dateKey, level: "done" });
+    } else if (dateKey === today) {
+      result.push({ date: dateKey, level: "empty" });
+    } else {
+      result.push({ date: dateKey, level: "missed" });
+    }
+  }
+
+  return result;
+}
+
 export function calculateStreaks({
   logs,
   scheduleWeekdays,

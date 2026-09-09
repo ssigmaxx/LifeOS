@@ -20,13 +20,14 @@ export type TodayWorkout = {
   durationMinutes: number | null;
   workoutType: string | null;
   note: string | null;
+  loggedAt: string;
 } | null;
 
 export async function getTodayWorkout(): Promise<TodayWorkout> {
   const { supabase, userId } = await requireUserId();
   const { data, error } = await supabase
     .from("workout_logs")
-    .select("id, completed, duration_minutes, workout_type, note")
+    .select("id, completed, duration_minutes, workout_type, note, created_at")
     .eq("user_id", userId)
     .eq("workout_date", todayISO())
     .maybeSingle();
@@ -39,6 +40,7 @@ export async function getTodayWorkout(): Promise<TodayWorkout> {
     durationMinutes: data.duration_minutes,
     workoutType: data.workout_type,
     note: data.note,
+    loggedAt: data.created_at,
   };
 }
 

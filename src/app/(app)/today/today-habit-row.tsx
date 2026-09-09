@@ -1,6 +1,6 @@
-import { Flame } from "lucide-react";
 import type { TodayHabit } from "@/lib/services/today-service";
 import { LogControl } from "@/app/(app)/habits/log-control";
+import { StreakBadge } from "@/components/streak-badge";
 
 export function TodayHabitRow({ habit }: { habit: TodayHabit }) {
   return (
@@ -10,12 +10,7 @@ export function TodayHabitRow({ habit }: { habit: TodayHabit }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{habit.name}</p>
-        {habit.streak.currentStreak > 0 ? (
-          <p className="flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400">
-            <Flame className="size-3" />
-            {habit.streak.currentStreak} day streak
-          </p>
-        ) : null}
+        <StreakBadge days={habit.streak.currentStreak} className="mt-0.5" />
       </div>
       <LogControl habit={habit} todayLog={habit.todayLog ?? undefined} />
     </div>

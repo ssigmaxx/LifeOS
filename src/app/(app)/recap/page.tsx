@@ -1,9 +1,43 @@
-import { BookOpen, Droplets, Dumbbell, Leaf, ListChecks, ListTodo, Utensils, Wind } from "lucide-react";
+import { BookOpen, Clock, Droplets, Dumbbell, Leaf, ListChecks, ListTodo, Utensils, Wind } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconBadge, type IconBadgeTone } from "@/components/icon-badge";
 import { RadialProgress } from "@/components/radial-progress";
-import { getDailyRecap } from "@/lib/services/daily-recap-service";
-import { formatMinutes, formatMl } from "@/lib/format";
+import { Timeline, TimelineItem } from "@/components/timeline";
+import { EmptyState } from "@/components/empty-state";
+import { getDailyRecap, type RecapTimelineEntry } from "@/lib/services/daily-recap-service";
+import { formatClockTime, formatMinutes, formatMl } from "@/lib/format";
+
+const TIMELINE_ICON = { water: Droplets, workout: Dumbbell, meditation: Wind, journal: BookOpen } as const;
+const TIMELINE_TONE: Record<RecapTimelineEntry["kind"], IconBadgeTone> = {
+  water: "blue",
+  workout: "rose",
+  meditation: "teal",
+  journal: "amber",
+};
+
+function timelineTitle(entry: RecapTimelineEntry): string {
+  switch (entry.kind) {
+    case "water":
+      return `Logged ${formatMl(entry.amountMl)} of water`;
+    case "workout":
+      return entry.workoutType ? `Workout · ${entry.workoutType}` : "Workout logged";
+    case "meditation":
+      return "Meditation";
+    case "journal":
+      return entry.entryType === "morning" ? "Morning journal entry" : "Evening journal entry";
+  }
+}
+
+function timelineSubtitle(entry: RecapTimelineEntry): string | null {
+  switch (entry.kind) {
+    case "workout":
+      return entry.durationMinutes != null ? formatMinutes(entry.durationMinutes) : null;
+    case "meditation":
+      return `${formatMinutes(entry.totalMinutes)} · ${entry.sessionCount} session${entry.sessionCount === 1 ? "" : "s"}`;
+    default:
+      return null;
+  }
+}
 
 function StatRow({
   icon,
@@ -51,6 +85,43 @@ export default async function RecapPage() {
           <p className="text-sm text-muted-foreground">{recap.summaryLine}</p>
         </CardContent>
       </Card>
+
+      <div className="space-y-2">
+        <h2 className="text-sm font-medium text-muted-foreground">Today&apos;s timeline</h2>
+        {recap.timeline.length === 0 ? (
+          <EmptyState
+            icon={Clock}
+            title="Nothing logged yet"
+            description="Water, workouts, meditation and journal entries will show up here as you log them."
+          />
+        ) : (
+          <Card>
+            <CardContent>
+              <Timeline>
+                {recap.timeline.map((entry, i) => {
+                  const Icon = TIMELINE_ICON[entry.kind];
+                  const subtitle = timelineSubtitle(entry);
+                  return (
+                    <TimelineItem
+                      key={`${entry.kind}-${entry.time}-${i}`}
+                      time={formatClockTime(new Date(entry.time))}
+                      last={i === recap.timeline.length - 1}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <IconBadge icon={Icon} tone={TIMELINE_TONE[entry.kind]} className="size-6" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm">{timelineTitle(entry)}</p>
+                          {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
+                        </div>
+                      </div>
+                    </TimelineItem>
+                  );
+                })}
+              </Timeline>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <Card>
         <CardContent className="divide-y py-0">
