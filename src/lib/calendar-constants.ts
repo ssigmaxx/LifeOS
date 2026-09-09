@@ -34,3 +34,8 @@ export const TODO_EVENT_COLOR = "#64748b";
 // keeps the cycle-tracking feature visually consistent with itself
 // wherever it shows up, distinct from a user-pickable calendar color.
 export const CYCLE_EVENT_COLOR = "#ec4899";
+
+// A lighter tint of CYCLE_EVENT_COLOR (Tailwind pink-300) for the
+// predicted PMS window — same family, visibly softer than an actual
+// logged period so the two read as "happened" vs "estimated".
+export const CYCLE_PMS_EVENT_COLOR = "#f9a8d4";

@@ -15,14 +15,18 @@ function toISO(year: number, month: number, day: number): string {
 export function CycleCalendar({
   selectedDate,
   periodDates,
+  pmsDates = [],
 }: {
   /** The day currently shown in the log form below — "YYYY-MM-DD". */
   selectedDate: string;
   /** Every date with a period logged, across all months. */
   periodDates: string[];
+  /** The predicted PMS window leading up to the next period, if estimable. */
+  pmsDates?: string[];
 }) {
   const router = useRouter();
   const periodSet = useMemo(() => new Set(periodDates), [periodDates]);
+  const pmsSet = useMemo(() => new Set(pmsDates), [pmsDates]);
   const todayISO = new Date().toISOString().slice(0, 10);
   const [todayYear, todayMonth] = todayISO.split("-").map(Number);
 
@@ -80,6 +84,7 @@ export function CycleCalendar({
           if (day == null) return <div key={`blank-${i}`} />;
           const date = toISO(cursor.year, cursor.month, day);
           const isPeriod = periodSet.has(date);
+          const isPms = !isPeriod && pmsSet.has(date);
           const isSelected = date === selectedDate;
           const isToday = date === todayISO;
           const isFuture = date > todayISO;
@@ -88,11 +93,13 @@ export function CycleCalendar({
               key={date}
               type="button"
               disabled={isFuture}
+              title={isPms ? "Predicted PMS window" : undefined}
               onClick={() => router.push(`/cycle?date=${date}`)}
               className={cn(
                 "flex aspect-square items-center justify-center rounded-md text-sm transition-colors",
                 isFuture && "cursor-not-allowed text-muted-foreground/40",
                 !isFuture && !isSelected && "hover:bg-accent",
+                isPms && !isSelected && "bg-pink-500/8 dark:bg-pink-400/10",
                 isPeriod && !isSelected && "bg-pink-500/15 font-medium text-pink-600 dark:text-pink-400",
                 isSelected && "bg-pink-500 font-medium text-white hover:bg-pink-500",
                 isToday && !isSelected && "ring-1 ring-inset ring-pink-500/50",

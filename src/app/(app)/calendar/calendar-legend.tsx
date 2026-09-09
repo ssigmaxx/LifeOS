@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { Settings2 } from "lucide-react";
 import type { Calendar } from "@/lib/services/calendar-service";
-import { CYCLE_EVENT_COLOR, GOAL_EVENT_COLOR, TODO_EVENT_COLOR } from "@/lib/calendar-constants";
+import {
+  CYCLE_EVENT_COLOR,
+  CYCLE_PMS_EVENT_COLOR,
+  GOAL_EVENT_COLOR,
+  TODO_EVENT_COLOR,
+} from "@/lib/calendar-constants";
 import { ManageCalendarsDialog } from "./manage-calendars-dialog";
 
 export function CalendarLegend({
@@ -37,10 +42,16 @@ export function CalendarLegend({
           Todos
         </span>
         {cycleTrackingEnabled ? (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: CYCLE_EVENT_COLOR }} />
-            Cycle
-          </span>
+          <>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: CYCLE_EVENT_COLOR }} />
+              Cycle
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: CYCLE_PMS_EVENT_COLOR }} />
+              PMS (predicted)
+            </span>
+          </>
         ) : null}
         <Settings2 className="size-3.5 shrink-0" />
       </button>

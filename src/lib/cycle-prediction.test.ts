@@ -1,24 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { estimateNextPeriod } from "./cycle-prediction";
 
+const NO_PREDICTION = {
+  nextPeriodStart: null,
+  averageCycleLengthDays: null,
+  cyclesUsed: 0,
+  lastPeriodStart: null,
+  ovulationEstimate: null,
+  fertileWindowStart: null,
+  fertileWindowEnd: null,
+  pmsWindowStart: null,
+  pmsWindowEnd: null,
+};
+
 describe("estimateNextPeriod", () => {
   it("predicts nothing with no logged periods", () => {
-    expect(estimateNextPeriod([])).toEqual({
-      nextPeriodStart: null,
-      averageCycleLengthDays: null,
-      cyclesUsed: 0,
-      lastPeriodStart: null,
-    });
+    expect(estimateNextPeriod([])).toEqual(NO_PREDICTION);
   });
 
   it("can't estimate a cycle length from a single logged period", () => {
     const result = estimateNextPeriod(["2026-01-01", "2026-01-02", "2026-01-03"]);
-    expect(result).toEqual({
-      nextPeriodStart: null,
-      averageCycleLengthDays: null,
-      cyclesUsed: 0,
-      lastPeriodStart: "2026-01-01",
-    });
+    expect(result).toEqual({ ...NO_PREDICTION, lastPeriodStart: "2026-01-01" });
   });
 
   it("treats a run of consecutive days as one period start", () => {
@@ -61,5 +63,19 @@ describe("estimateNextPeriod", () => {
     expect(result.cyclesUsed).toBe(1);
     expect(result.lastPeriodStart).toBe("2026-08-15");
     expect(result.nextPeriodStart).toBe("2026-09-12");
+  });
+
+  it("derives ovulation, fertile window, and PMS window from the predicted next period", () => {
+    // Two 28-day cycles -> nextPeriodStart is 2026-02-26.
+    const result = estimateNextPeriod(["2026-01-01", "2026-01-29"]);
+    expect(result.nextPeriodStart).toBe("2026-02-26");
+    // Ovulation: 14 days before the next period (the stable luteal-phase estimate).
+    expect(result.ovulationEstimate).toBe("2026-02-12");
+    // Fertile window: 5 days before ovulation through 1 day after.
+    expect(result.fertileWindowStart).toBe("2026-02-07");
+    expect(result.fertileWindowEnd).toBe("2026-02-13");
+    // PMS window: the 5 days immediately before the next period.
+    expect(result.pmsWindowStart).toBe("2026-02-21");
+    expect(result.pmsWindowEnd).toBe("2026-02-25");
   });
 });

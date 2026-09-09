@@ -15,7 +15,12 @@ import { EventCalendar } from "@/registry/components/event-calendar";
 import type { Calendar, CalendarEvent } from "@/lib/services/calendar-service";
 import type { GoalCalendarEvent } from "@/lib/services/goal-service";
 import type { TodoCalendarEvent } from "@/lib/services/todo-service";
-import { CYCLE_EVENT_COLOR, GOAL_EVENT_COLOR, TODO_EVENT_COLOR } from "@/lib/calendar-constants";
+import {
+  CYCLE_EVENT_COLOR,
+  CYCLE_PMS_EVENT_COLOR,
+  GOAL_EVENT_COLOR,
+  TODO_EVENT_COLOR,
+} from "@/lib/calendar-constants";
 import { updateEventTimesAction } from "./actions";
 import { EventFormDialog } from "./event-form-dialog";
 import { EventDetailDialog } from "./event-detail-dialog";
@@ -74,6 +79,18 @@ function toCycleEventInput(date: string): EventInput {
     editable: false,
     color: CYCLE_EVENT_COLOR,
     extendedProps: { source: "cycle", cycleDate: date },
+  };
+}
+
+function toCyclePmsEventInput(date: string): EventInput {
+  return {
+    id: `cycle-pms-${date}`,
+    title: "PMS (predicted)",
+    start: date,
+    allDay: true,
+    editable: false,
+    color: CYCLE_PMS_EVENT_COLOR,
+    extendedProps: { source: "cycle-pms", cycleDate: date },
   };
 }
 
@@ -148,12 +165,15 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
     const events: CalendarEvent[] = await eventsResponse.json();
     const goalEvents: GoalCalendarEvent[] = goalEventsResponse.ok ? await goalEventsResponse.json() : [];
     const todoEvents: TodoCalendarEvent[] = todoEventsResponse.ok ? await todoEventsResponse.json() : [];
-    const cycleDates: string[] = cycleEventsResponse.ok ? await cycleEventsResponse.json() : [];
+    const cycleEvents: { periodDates: string[]; pmsDates: string[] } = cycleEventsResponse.ok
+      ? await cycleEventsResponse.json()
+      : { periodDates: [], pmsDates: [] };
     return [
       ...events.map(toEventInput),
       ...goalEvents.map(toGoalEventInput),
       ...todoEvents.map(toTodoEventInput),
-      ...cycleDates.map(toCycleEventInput),
+      ...cycleEvents.periodDates.map(toCycleEventInput),
+      ...cycleEvents.pmsDates.map(toCyclePmsEventInput),
     ];
   }, []);
 
@@ -169,7 +189,7 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
         setTodoDetailOpen(true);
         return;
       }
-      if (info.event.extendedProps.source === "cycle") {
+      if (info.event.extendedProps.source === "cycle" || info.event.extendedProps.source === "cycle-pms") {
         router.push(`/cycle?date=${info.event.extendedProps.cycleDate as string}`);
         return;
       }

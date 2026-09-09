@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
 import { FLOW_LABELS } from "@/lib/cycle-constants";
+import { addDays } from "@/lib/cycle-prediction";
 import {
   getCycleLog,
   isCycleTrackingEnabled,
@@ -31,6 +32,12 @@ function formatDate(dateISO: string) {
     month: "short",
     day: "numeric",
   });
+}
+
+function dateRange(startISO: string, endISO: string): string[] {
+  const dates: string[] = [];
+  for (let d = startISO; d <= endISO; d = addDays(d, 1)) dates.push(d);
+  return dates;
 }
 
 function hasAnyData(log: CycleLog) {
@@ -82,6 +89,10 @@ export default async function CyclePage({
     predictNextPeriod(),
   ]);
   const loggedHistory = history.filter(hasAnyData);
+  const pmsDates =
+    prediction.pmsWindowStart && prediction.pmsWindowEnd
+      ? dateRange(prediction.pmsWindowStart, prediction.pmsWindowEnd)
+      : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -93,10 +104,18 @@ export default async function CyclePage({
       <Card className="border-pink-500/30 bg-pink-500/5">
         <CardContent className="flex items-center gap-3">
           <CalendarHeart className="size-5 shrink-0 text-pink-500 dark:text-pink-400" />
-          {prediction.nextPeriodStart && prediction.averageCycleLengthDays != null ? (
-            <div>
+          {prediction.nextPeriodStart &&
+          prediction.averageCycleLengthDays != null &&
+          prediction.fertileWindowStart &&
+          prediction.fertileWindowEnd &&
+          prediction.ovulationEstimate ? (
+            <div className="space-y-1">
               <p className="text-sm font-medium text-pink-700 dark:text-pink-300">
                 Next period estimated {formatDate(prediction.nextPeriodStart)}
+              </p>
+              <p className="text-xs text-pink-700/80 dark:text-pink-300/80">
+                Fertile window {formatDate(prediction.fertileWindowStart)}–
+                {formatDate(prediction.fertileWindowEnd)} (ovulation ~{formatDate(prediction.ovulationEstimate)})
               </p>
               <p className="text-xs text-muted-foreground">
                 Based on your last {prediction.cyclesUsed} logged cycle{prediction.cyclesUsed === 1 ? "" : "s"}{" "}
@@ -115,7 +134,7 @@ export default async function CyclePage({
 
       <div className="grid gap-6 md:grid-cols-5">
         <div className="md:col-span-2">
-          <CycleCalendar selectedDate={date} periodDates={periodDates} />
+          <CycleCalendar selectedDate={date} periodDates={periodDates} pmsDates={pmsDates} />
         </div>
         <div className="md:col-span-3">
           <CycleLogForm key={date} date={date} log={log} />
