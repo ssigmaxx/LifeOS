@@ -1,18 +1,24 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import type { Profile } from "@/lib/services/profile-service";
+import type { Gender, Profile } from "@/lib/services/profile-service";
 import { updateProfileAction } from "./actions";
 
 const AVATAR_ICONS = [
   "😀", "😎", "🥳", "🤓", "🦁", "🐯", "🐼", "🦊",
   "🐨", "🐸", "🦄", "🐙", "🌟", "🔥", "🌈", "🍀",
   "⚡", "🌙", "☀️", "🌊", "🌵", "🎯", "🚀", "🎨",
+];
+
+const GENDER_OPTIONS: { value: Gender; label: string }[] = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
 ];
 
 function calculateAge(birthDate: string): number | null {
@@ -28,9 +34,11 @@ function calculateAge(birthDate: string): number | null {
 }
 
 export function ProfileForm({ profile }: { profile: Profile }) {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState(profile.displayName ?? "");
   const [avatarIcon, setAvatarIcon] = useState(profile.avatarIcon ?? "");
   const [birthDate, setBirthDate] = useState(profile.birthDate ?? "");
+  const [gender, setGender] = useState<Gender | "">(profile.gender ?? "");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -41,9 +49,21 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     setError(null);
     setNotice(null);
     startTransition(async () => {
-      const result = await updateProfileAction({ displayName, avatarIcon, birthDate });
-      if (result.error) setError(result.error);
-      else setNotice("Profile saved.");
+      const result = await updateProfileAction({ displayName, avatarIcon, birthDate, gender });
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setNotice(
+        result.cycleTrackingAutoEnabled
+          ? "Profile saved — cycle tracking has been turned on for you."
+          : "Profile saved.",
+      );
+      // Cycle tracking's own toggle (and anything else profile-driven, like
+      // the sidebar's name/icon) lives in this same Server Component tree —
+      // refresh it so an auto-enable shows up immediately, not just after
+      // the next navigation.
+      router.refresh();
     });
   }
 
@@ -91,6 +111,33 @@ export function ProfileForm({ profile }: { profile: Profile }) {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Gender</Label>
+          <div className="flex gap-2">
+            {GENDER_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={gender === option.value}
+                onClick={() => setGender(gender === option.value ? "" : option.value)}
+                className={cn(
+                  "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                  gender === option.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-input hover:bg-accent",
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          {gender === "female" ? (
+            <p className="text-sm text-muted-foreground">
+              Selecting female turns on cycle tracking for you — you can turn it back off below anytime.
+            </p>
+          ) : null}
         </div>
 
         <div className="space-y-2">

@@ -71,24 +71,28 @@ export async function sendTestNotificationAction(): Promise<ActionResult> {
   return results.some((r) => r.ok) ? { error: null } : { error: "Failed to send test notification." };
 }
 
+export type ProfileActionResult = ActionResult & { cycleTrackingAutoEnabled?: boolean };
+
 export async function updateProfileAction(values: {
   displayName: string;
   avatarIcon: string;
   birthDate: string;
-}): Promise<ActionResult> {
+  gender: string;
+}): Promise<ProfileActionResult> {
   const parsed = profileFormSchema.safeParse(values);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
+  let result;
   try {
-    await updateProfile(parsed.data as ProfileUpdate);
+    result = await updateProfile(parsed.data as ProfileUpdate);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to save profile." };
   }
   revalidatePath("/settings");
   revalidatePath("/", "layout");
-  return { error: null };
+  return { error: null, cycleTrackingAutoEnabled: result.cycleTrackingAutoEnabled };
 }
 
 // Deliberately not a reuse of the shared updatePassword action in
