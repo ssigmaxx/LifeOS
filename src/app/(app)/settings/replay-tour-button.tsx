@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { TOUR_DISMISS_KEY } from "@/components/onboarding-tour";
+import { TOUR_DISMISS_KEY } from "@/components/onboarding-flow";
 
 export function ReplayTourButton() {
   const router = useRouter();

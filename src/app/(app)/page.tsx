@@ -10,8 +10,7 @@ import { listGoals } from "@/lib/services/goal-service";
 import { getDailyScoreSeries, resolveRange } from "@/lib/services/analytics-service";
 import { getDailyTotals, getNutritionProfile } from "@/lib/services/nutrition-service";
 import { getTodosDueOnDate } from "@/lib/services/todo-service";
-import { OnboardingChecklist, type OnboardingStep } from "@/components/onboarding-checklist";
-import { OnboardingTour } from "@/components/onboarding-tour";
+import { OnboardingFlow, type OnboardingStep } from "@/components/onboarding-flow";
 import { ScoreTrendChart } from "./analytics/score-trend-chart";
 import { NutritionCard } from "./today/nutrition-card";
 
@@ -54,8 +53,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <OnboardingTour />
-      <OnboardingChecklist steps={onboardingSteps} />
+      <OnboardingFlow steps={onboardingSteps} />
 
       <Link href="/today" className="block">
         <Card className="transition-shadow hover:shadow-md">
