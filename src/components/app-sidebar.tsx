@@ -12,7 +12,13 @@ import { CommandPaletteTrigger } from "@/components/command-palette";
 import type { Locale } from "@/lib/i18n/locale";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-function NavLink({ item, active, dict }: { item: NavItem; active: boolean; dict: Dictionary }) {
+// Client components can only receive serializable props from a Server
+// Component — the full Dictionary has function values (pluralization
+// helpers) elsewhere in its tree, so only the plain-string `nav`/`common`
+// slices cross that boundary, never the whole dict.
+type NavDict = Dictionary["nav"];
+
+function NavLink({ item, active, nav }: { item: NavItem; active: boolean; nav: NavDict }) {
   return (
     <Link
       href={item.href}
@@ -24,7 +30,7 @@ function NavLink({ item, active, dict }: { item: NavItem; active: boolean; dict:
       )}
     >
       <item.icon className="size-4 shrink-0" />
-      {dict.nav[item.labelKey]}
+      {nav[item.labelKey]}
     </Link>
   );
 }
@@ -32,11 +38,13 @@ function NavLink({ item, active, dict }: { item: NavItem; active: boolean; dict:
 export function AppSidebar({
   userEmail,
   locale,
-  dict,
+  nav,
+  themeLabel,
 }: {
   userEmail: string;
   locale: Locale;
-  dict: Dictionary;
+  nav: NavDict;
+  themeLabel: string;
 }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
@@ -57,21 +65,21 @@ export function AppSidebar({
         {primaryNavSections.map((section) => (
           <div key={section.labelKey} className="space-y-1">
             <p className="px-3 text-xs font-medium tracking-wide text-sidebar-foreground/50 uppercase">
-              {dict.nav[section.labelKey]}
+              {nav[section.labelKey]}
             </p>
             {section.items.map((item) => (
-              <NavLink key={item.href} item={item} active={isActive(item.href)} dict={dict} />
+              <NavLink key={item.href} item={item} active={isActive(item.href)} nav={nav} />
             ))}
           </div>
         ))}
         <div className="space-y-1 border-t border-sidebar-border pt-3">
-          <NavLink item={settingsNavItem} active={isActive(settingsNavItem.href)} dict={dict} />
+          <NavLink item={settingsNavItem} active={isActive(settingsNavItem.href)} nav={nav} />
         </div>
       </nav>
       <div className="space-y-2 border-t px-3 py-3">
         <NavUser email={userEmail} />
         <div className="flex items-center justify-between px-1">
-          <span className="text-xs text-sidebar-foreground/60">{dict.common.theme}</span>
+          <span className="text-xs text-sidebar-foreground/60">{themeLabel}</span>
           <ThemeToggle />
         </div>
       </div>

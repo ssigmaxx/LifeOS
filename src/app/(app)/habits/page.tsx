@@ -65,7 +65,7 @@ export default async function HabitsPage() {
           <p className="text-sm text-muted-foreground">{dict.habits.subtitle}</p>
         </div>
         <div className="flex gap-2">
-          <CategoryFormDialog dict={dict} />
+          <CategoryFormDialog dict={dict.habits.categoryDialog} />
           <HabitFormDialog
             categories={categories}
             trigger={
@@ -124,7 +124,14 @@ export default async function HabitsPage() {
                         </summary>
                         {group.id !== UNCATEGORIZED_ID ? (
                           <div className="absolute top-1.5 right-2">
-                            <CategoryMenu categoryId={group.id} categoryName={group.name} dict={dict} />
+                            <CategoryMenu
+                              categoryId={group.id}
+                              categoryName={group.name}
+                              dict={{
+                                ...dict.habits.categoryMenu,
+                                deleteTitle: dict.habits.categoryMenu.deleteTitle(group.name),
+                              }}
+                            />
                           </div>
                         ) : null}
                         <div className="space-y-2 border-t px-3 pt-2 pb-3">

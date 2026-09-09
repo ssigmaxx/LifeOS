@@ -16,7 +16,11 @@ import {
 import { NavUser } from "@/components/nav-user";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export function MobileNav({ userEmail, dict }: { userEmail: string; dict: Dictionary }) {
+// Only the plain-string nav slice crosses the Server->Client boundary —
+// see the comment in app-sidebar.tsx for why the full Dictionary can't.
+type NavDict = Dictionary["nav"];
+
+export function MobileNav({ userEmail, nav }: { userEmail: string; nav: NavDict }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const moreActive = moreNav.some((item) => pathname.startsWith(item.href));
@@ -38,7 +42,7 @@ export function MobileNav({ userEmail, dict }: { userEmail: string; dict: Dictio
             )}
           >
             <item.icon className="size-5" />
-            {dict.nav[item.labelKey]}
+            {nav[item.labelKey]}
           </Link>
         );
       })}
@@ -56,11 +60,11 @@ export function MobileNav({ userEmail, dict }: { userEmail: string; dict: Dictio
           }
         >
           <Menu className="size-5" />
-          {dict.nav.more}
+          {nav.more}
         </SheetTrigger>
         <SheetContent side="bottom" className="pb-8">
           <SheetHeader>
-            <SheetTitle>{dict.nav.more}</SheetTitle>
+            <SheetTitle>{nav.more}</SheetTitle>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-3 px-4">
             {moreNav.map((item) => (
@@ -71,7 +75,7 @@ export function MobileNav({ userEmail, dict }: { userEmail: string; dict: Dictio
                 className="flex flex-col items-center gap-2 rounded-lg border p-4 text-sm font-medium hover:bg-accent"
               >
                 <item.icon className="size-5" />
-                {dict.nav[item.labelKey]}
+                {nav[item.labelKey]}
               </Link>
             ))}
           </div>
