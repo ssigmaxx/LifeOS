@@ -14,8 +14,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { NavUser } from "@/components/nav-user";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export function MobileNav({ userEmail }: { userEmail: string }) {
+// Only the plain-string nav slice crosses the Server->Client boundary —
+// see the comment in app-sidebar.tsx for why the full Dictionary can't.
+type NavDict = Dictionary["nav"];
+
+export function MobileNav({ userEmail, nav }: { userEmail: string; nav: NavDict }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const moreActive = moreNav.some((item) => pathname.startsWith(item.href));
@@ -37,7 +42,7 @@ export function MobileNav({ userEmail }: { userEmail: string }) {
             )}
           >
             <item.icon className="size-5" />
-            {item.label}
+            {nav[item.labelKey]}
           </Link>
         );
       })}
@@ -55,11 +60,11 @@ export function MobileNav({ userEmail }: { userEmail: string }) {
           }
         >
           <Menu className="size-5" />
-          More
+          {nav.more}
         </SheetTrigger>
         <SheetContent side="bottom" className="pb-8">
           <SheetHeader>
-            <SheetTitle>More</SheetTitle>
+            <SheetTitle>{nav.more}</SheetTitle>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-3 px-4">
             {moreNav.map((item) => (
@@ -70,7 +75,7 @@ export function MobileNav({ userEmail }: { userEmail: string }) {
                 className="flex flex-col items-center gap-2 rounded-lg border p-4 text-sm font-medium hover:bg-accent"
               >
                 <item.icon className="size-5" />
-                {item.label}
+                {nav[item.labelKey]}
               </Link>
             ))}
           </div>
