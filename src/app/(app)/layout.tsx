@@ -21,7 +21,24 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
     locale,
     cycleTrackingEnabled,
     profile,
-  ] = await Promise.all([supabase.auth.getUser(), getLocale(), isCycleTrackingEnabled(), getProfile()]);
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    getLocale(),
+    isCycleTrackingEnabled(),
+    // Falls back instead of throwing: this now runs on every authenticated
+    // page, so a profile-table read failing for any reason (most likely a
+    // migration adding display_name/avatar_icon/birth_date/gender that
+    // hasn't been applied to this database yet) must not take down the
+    // entire app — it should just render without a name/icon until it's
+    // fixed, the same as before this field existed.
+    getProfile().catch(() => ({
+      displayName: null,
+      avatarIcon: null,
+      birthDate: null,
+      gender: null,
+      email: "",
+    })),
+  ]);
   const dict = getDictionary(locale);
 
   // The proxy already redirects unauthenticated requests to /login before
