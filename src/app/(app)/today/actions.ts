@@ -91,3 +91,12 @@ export async function clearTodayWorkoutAction() {
   await clearTodayWorkout();
   revalidatePath("/today");
 }
+
+// Bare "mark done" variant for the command palette — logTodayWorkout's
+// fields are all optional, so an empty call just upserts completed:true
+// for today without a duration/type (logWorkoutAction's FormData shape
+// doesn't fit a one-tap call with no form).
+export async function logWorkoutQuickAction() {
+  await logTodayWorkout({});
+  revalidatePath("/today");
+}

@@ -29,6 +29,25 @@ export async function createTodoAction(
   return { error: null };
 }
 
+// Bare-signature variant for the command palette, which has a free-text
+// query but no <form> to submit — createTodoAction is shaped for
+// useActionState (FormData in) so it doesn't fit a one-tap call.
+export async function quickCreateTodoAction(title: string): Promise<FormActionState> {
+  const parsed = todoInputSchema.safeParse({ title });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid todo." };
+  }
+  try {
+    await createTodo(parsed.data);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to create todo." };
+  }
+  revalidatePath("/todos");
+  revalidatePath("/today");
+  revalidatePath("/calendar");
+  return { error: null };
+}
+
 export async function toggleTodoAction(id: string, completed: boolean) {
   await toggleTodoComplete(id, completed);
   revalidatePath("/todos");
