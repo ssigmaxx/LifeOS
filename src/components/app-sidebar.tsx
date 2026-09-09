@@ -50,7 +50,7 @@ export function AppSidebar({
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
-    <aside className="hidden md:flex md:w-60 md:shrink-0 md:flex-col md:border-r md:bg-sidebar md:text-sidebar-foreground">
+    <aside className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:border-r md:bg-sidebar md:text-sidebar-foreground">
       <div className="flex h-16 items-center gap-2 px-6">
         <Sparkles className="size-5 text-primary" />
         <span className="text-lg font-semibold tracking-tight">LifeOS</span>
