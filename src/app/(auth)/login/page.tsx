@@ -5,9 +5,9 @@ import { LoginForm } from "./login-form";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; confirmed?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, confirmed } = await searchParams;
 
   return (
     <Card>
@@ -16,6 +16,11 @@ export default async function LoginPage({
         <CardDescription>Welcome back to your private LifeOS.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {confirmed ? (
+          <p role="status" className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
+            Your account is confirmed — log in below.
+          </p>
+        ) : null}
         {error ? (
           <p role="alert" className="text-sm text-destructive">
             {error}

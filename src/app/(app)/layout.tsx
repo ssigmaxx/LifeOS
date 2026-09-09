@@ -7,12 +7,20 @@ import { isCycleTrackingEnabled } from "@/lib/services/cycle-service";
 
 export default async function AppGroupLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const locale = await getLocale();
+  // isCycleTrackingEnabled() does its own separate auth check internally
+  // (a second Supabase Auth round trip beyond the getUser() call right
+  // here) — this can't be fully deduped without changing its signature
+  // everywhere it's called, but running it and getLocale() alongside the
+  // getUser() call below at least stops all three from queuing up one
+  // after another on every single authenticated page in the app.
+  const [
+    {
+      data: { user },
+    },
+    locale,
+    cycleTrackingEnabled,
+  ] = await Promise.all([supabase.auth.getUser(), getLocale(), isCycleTrackingEnabled()]);
   const dict = getDictionary(locale);
-  const cycleTrackingEnabled = await isCycleTrackingEnabled();
 
   // The proxy already redirects unauthenticated requests to /login before
   // they reach this layout, so user is expected to be present here.

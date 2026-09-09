@@ -13,6 +13,18 @@ function safeNextPath(next: string | null): string {
   return next;
 }
 
+// Password reset needs to continue straight into /update-password with the
+// fresh session it just got — that page is where the flow actually
+// finishes. Every other case reaching here is a signup confirmation, which
+// is already done the moment this succeeds: send them to a plain "you're
+// confirmed, log in" state instead of dropping them straight into the app.
+// A silent redirect into the app reads as "nothing happened" if literally
+// anything downstream hiccups (an extra render, a slow cold start), which
+// is a worse experience than just telling them plainly what happened.
+function afterConfirmRedirect(next: string): string {
+  return next === "/update-password" ? next : "/login?confirmed=1";
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const next = safeNextPath(searchParams.get("next"));
@@ -24,7 +36,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      redirect(next);
+      redirect(afterConfirmRedirect(next));
     }
   }
 
@@ -34,9 +46,20 @@ export async function GET(request: NextRequest) {
   if (token_hash && type) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash });
     if (!error) {
-      redirect(next);
+      redirect(afterConfirmRedirect(next));
     }
   }
 
-  redirect("/login?error=Your link is invalid or has expired.");
+  // A PKCE code (the `code` branch above) is single-use and tied to the
+  // browser that started the flow — the single most common reason a real
+  // signup or reset link "shows an error" is the code already having been
+  // consumed by something else (an email client's link-safety prescanner,
+  // or opening the link in a different browser than the one used to sign
+  // up), not the account itself being broken. This is worded to reflect
+  // that rather than reading as "signup failed."
+  const params = new URLSearchParams({
+    error:
+      "That link didn't work — it may have expired or already been used. If you just signed up or reset your password, try logging in below; it may already be confirmed.",
+  });
+  redirect(`/login?${params.toString()}`);
 }
