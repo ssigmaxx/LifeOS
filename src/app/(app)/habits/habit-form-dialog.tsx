@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -64,6 +65,7 @@ export function HabitFormDialog({
   useEffect(() => {
     if (state !== initialState && !state.error) {
       setOpen(false);
+      toast.success(habit ? "Habit updated." : "Habit created.");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);

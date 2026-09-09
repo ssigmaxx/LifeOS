@@ -248,6 +248,18 @@ export async function setHabitActive(id: string, isActive: boolean): Promise<voi
   if (error) throw error;
 }
 
+// Used to reassign habits back to a just-recreated category when undoing a
+// category delete — a single-column update rather than the full
+// updateHabit(id, HabitFormValues) form-save path, which needs every field.
+export async function setHabitCategory(id: string, categoryId: string | null): Promise<void> {
+  const { supabase } = await requireUserId();
+  const { error } = await supabase
+    .from("habits")
+    .update({ category_id: categoryId })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function archiveHabit(id: string): Promise<void> {
   const { supabase } = await requireUserId();
   const { error } = await supabase

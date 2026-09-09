@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -30,7 +31,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
-import { deleteCategoryAction, renameCategoryAction, type FormActionState } from "./actions";
+import { runAction } from "@/lib/toast-action";
+import {
+  deleteCategoryAction,
+  renameCategoryAction,
+  restoreCategoryAction,
+  type FormActionState,
+} from "./actions";
 
 const initialState: FormActionState = { error: null };
 
@@ -42,10 +49,13 @@ type CategoryMenuDict = Dictionary["habits"]["categoryMenu"];
 export function CategoryMenu({
   categoryId,
   categoryName,
+  habitIds,
   dict,
 }: {
   categoryId: string;
   categoryName: string;
+  /** Habits currently in this category — captured so a delete can be undone by reassigning them back. */
+  habitIds: string[];
   dict: CategoryMenuDict;
 }) {
   const [renameOpen, setRenameOpen] = useState(false);
@@ -58,6 +68,10 @@ export function CategoryMenu({
     setPrevState(state);
     if (state !== initialState && !state.error) setRenameOpen(false);
   }
+
+  useEffect(() => {
+    if (state !== initialState && !state.error) toast.success("Category renamed.");
+  }, [state]);
 
   return (
     <>
@@ -121,7 +135,17 @@ export function CategoryMenu({
               variant="destructive-solid"
               onClick={() => {
                 setDeleteOpen(false);
-                deleteCategoryAction(categoryId);
+                void runAction(deleteCategoryAction(categoryId), {
+                  success: `Category "${categoryName}" deleted.`,
+                  error: "Failed to delete category.",
+                  undo: {
+                    onClick: () =>
+                      void runAction(restoreCategoryAction(categoryName, habitIds), {
+                        success: `Category "${categoryName}" restored.`,
+                        error: "Failed to restore category.",
+                      }),
+                  },
+                });
               }}
             >
               {dict.delete}

@@ -11,6 +11,7 @@ import {
   logHabitToday,
   renameCategory,
   setHabitActive,
+  setHabitCategory,
   updateHabit,
 } from "@/lib/services/habit-service";
 import { habitFormSchema, newCategorySchema } from "@/lib/validations/habit";
@@ -118,6 +119,17 @@ export async function renameCategoryAction(
 
 export async function deleteCategoryAction(categoryId: string) {
   await deleteCategory(categoryId);
+  revalidatePath("/habits");
+  revalidatePath("/today");
+}
+
+// Undo for deleteCategoryAction: recreates the category (new id — the old
+// one is gone) and reassigns the habits that were in it back to it. Habits
+// fall back to Uncategorized (category_id NULL) the moment the category is
+// deleted, so habitIds must be captured by the caller before deleting.
+export async function restoreCategoryAction(name: string, habitIds: string[]) {
+  const category = await createCategory(name);
+  await Promise.all(habitIds.map((id) => setHabitCategory(id, category.id)));
   revalidatePath("/habits");
   revalidatePath("/today");
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,6 +39,10 @@ export function CategoryFormDialog({ dict }: { dict: CategoryDialogDict }) {
       setOpen(false);
     }
   }
+
+  useEffect(() => {
+    if (state !== initialState && !state.error) toast.success("Category created.");
+  }, [state]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
