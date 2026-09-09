@@ -5,6 +5,7 @@ import { getLocale } from "@/lib/i18n/get-locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { isCycleTrackingEnabled } from "@/lib/services/cycle-service";
 import { getProfile } from "@/lib/services/profile-service";
+import { getPendingFriendRequestCount } from "@/lib/services/friend-service";
 
 export default async function AppGroupLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
@@ -21,6 +22,7 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
     locale,
     cycleTrackingEnabled,
     profile,
+    pendingFriendRequestCount,
   ] = await Promise.all([
     supabase.auth.getUser(),
     getLocale(),
@@ -38,6 +40,7 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
       gender: null,
       email: "",
     })),
+    getPendingFriendRequestCount().catch(() => 0),
   ]);
   const dict = getDictionary(locale);
 
@@ -51,6 +54,7 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
       locale={locale}
       dict={dict}
       cycleTrackingEnabled={cycleTrackingEnabled}
+      pendingFriendRequestCount={pendingFriendRequestCount}
     >
       {children}
     </AppShell>

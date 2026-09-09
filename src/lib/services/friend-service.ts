@@ -52,6 +52,20 @@ export async function listFriendConnections(): Promise<FriendConnection[]> {
   }));
 }
 
+// Lightweight count-only query (no join to auth.users, no row data) so this
+// can run on every authenticated page load for the nav badge without the
+// cost of the full get_friend_connections() RPC.
+export async function getPendingFriendRequestCount(): Promise<number> {
+  const { supabase, userId } = await requireUserId();
+  const { count, error } = await supabase
+    .from("friendships")
+    .select("id", { count: "exact", head: true })
+    .eq("addressee_id", userId)
+    .eq("status", "pending");
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function sendFriendRequest(email: string): Promise<void> {
   const { supabase, userId } = await requireUserId();
 

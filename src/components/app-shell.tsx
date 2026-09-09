@@ -16,6 +16,7 @@ export function AppShell({
   locale,
   dict,
   cycleTrackingEnabled,
+  pendingFriendRequestCount,
 }: {
   children: ReactNode;
   userEmail: string;
@@ -24,6 +25,7 @@ export function AppShell({
   locale: Locale;
   dict: Dictionary;
   cycleTrackingEnabled: boolean;
+  pendingFriendRequestCount: number;
 }) {
   return (
     <CommandPaletteProvider>
@@ -36,6 +38,7 @@ export function AppShell({
           nav={dict.nav}
           themeLabel={dict.common.theme}
           cycleTrackingEnabled={cycleTrackingEnabled}
+          pendingFriendRequestCount={pendingFriendRequestCount}
         />
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex h-14 items-center justify-between gap-2 border-b px-4 md:hidden">
@@ -61,6 +64,7 @@ export function AppShell({
           avatarIcon={avatarIcon}
           nav={dict.nav}
           cycleTrackingEnabled={cycleTrackingEnabled}
+          pendingFriendRequestCount={pendingFriendRequestCount}
         />
       </div>
     </CommandPaletteProvider>

@@ -26,12 +26,14 @@ export function MobileNav({
   avatarIcon,
   nav,
   cycleTrackingEnabled,
+  pendingFriendRequestCount,
 }: {
   userEmail: string;
   displayName?: string | null;
   avatarIcon?: string | null;
   nav: NavDict;
   cycleTrackingEnabled: boolean;
+  pendingFriendRequestCount: number;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -72,7 +74,12 @@ export function MobileNav({
             />
           }
         >
-          <Menu className="size-5" />
+          <span className="relative">
+            <Menu className="size-5" />
+            {pendingFriendRequestCount > 0 ? (
+              <span className="absolute -top-1 -right-1 size-2 rounded-full bg-red-500" />
+            ) : null}
+          </span>
           {nav.more}
         </SheetTrigger>
         <SheetContent side="bottom" className="pb-8">
@@ -82,16 +89,22 @@ export function MobileNav({
           <div className="grid grid-cols-3 gap-3 px-4">
             {visibleMoreNav.map((item) => {
               const isCycle = item.href === "/cycle";
+              const isFriends = item.href === "/friends";
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "flex flex-col items-center gap-2 rounded-lg border p-4 text-sm font-medium hover:bg-accent",
+                    "relative flex flex-col items-center gap-2 rounded-lg border p-4 text-sm font-medium hover:bg-accent",
                     isCycle && "border-pink-500/30 text-pink-600 dark:text-pink-400",
                   )}
                 >
+                  {isFriends && pendingFriendRequestCount > 0 ? (
+                    <span className="absolute top-2 right-2 flex min-w-4.5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                      {pendingFriendRequestCount > 9 ? "9+" : pendingFriendRequestCount}
+                    </span>
+                  ) : null}
                   <item.icon className={cn("size-5", isCycle && "text-pink-500 dark:text-pink-400")} />
                   {nav[item.labelKey]}
                 </Link>

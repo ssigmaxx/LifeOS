@@ -18,7 +18,17 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 // slices cross that boundary, never the whole dict.
 type NavDict = Dictionary["nav"];
 
-function NavLink({ item, active, nav }: { item: NavItem; active: boolean; nav: NavDict }) {
+function NavLink({
+  item,
+  active,
+  nav,
+  badgeCount,
+}: {
+  item: NavItem;
+  active: boolean;
+  nav: NavDict;
+  badgeCount?: number;
+}) {
   const isCycle = item.href === "/cycle";
   return (
     <Link
@@ -35,7 +45,12 @@ function NavLink({ item, active, nav }: { item: NavItem; active: boolean; nav: N
       )}
     >
       <item.icon className={cn("size-4 shrink-0", isCycle && "text-pink-500 dark:text-pink-400")} />
-      {nav[item.labelKey]}
+      <span className="flex-1">{nav[item.labelKey]}</span>
+      {badgeCount ? (
+        <span className="flex min-w-4.5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+          {badgeCount > 9 ? "9+" : badgeCount}
+        </span>
+      ) : null}
     </Link>
   );
 }
@@ -48,6 +63,7 @@ export function AppSidebar({
   nav,
   themeLabel,
   cycleTrackingEnabled,
+  pendingFriendRequestCount,
 }: {
   userEmail: string;
   displayName?: string | null;
@@ -56,6 +72,7 @@ export function AppSidebar({
   nav: NavDict;
   themeLabel: string;
   cycleTrackingEnabled: boolean;
+  pendingFriendRequestCount: number;
 }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
@@ -83,7 +100,13 @@ export function AppSidebar({
               {nav[section.labelKey]}
             </p>
             {section.items.map((item) => (
-              <NavLink key={item.href} item={item} active={isActive(item.href)} nav={nav} />
+              <NavLink
+                key={item.href}
+                item={item}
+                active={isActive(item.href)}
+                nav={nav}
+                badgeCount={item.href === "/friends" ? pendingFriendRequestCount : undefined}
+              />
             ))}
           </div>
         ))}
