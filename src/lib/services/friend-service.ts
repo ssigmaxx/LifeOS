@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { calculateStreaks, type StreakResult } from "@/lib/streaks";
 import { isLogComplete, type TrackingType } from "@/lib/habit-completion";
 import { average, maxOf } from "@/lib/stats";
-import { listHabits } from "./habit-service";
+import { listHabits, type Habit } from "./habit-service";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -120,10 +120,13 @@ export type FriendSharedHabits = {
   habits: FriendHabit[];
 };
 
-export async function getFriendsSharedHabits(): Promise<FriendSharedHabits[]> {
+// Accepts already-fetched connections so callers that need them for other
+// purposes too (the Friends page) don't trigger a second get_friend_connections
+// round trip on every load.
+export async function getFriendsSharedHabits(connections?: FriendConnection[]): Promise<FriendSharedHabits[]> {
   const { supabase } = await requireUserId();
-  const connections = await listFriendConnections();
-  const friends = connections.filter((c) => c.status === "accepted");
+  const allConnections = connections ?? (await listFriendConnections());
+  const friends = allConnections.filter((c) => c.status === "accepted");
   if (friends.length === 0) return [];
 
   const friendIds = friends.map((f) => f.friendId);
@@ -241,10 +244,17 @@ export type LeaderboardEntry = {
 // Ranks only on shared habits — friends never see anything you haven't
 // explicitly marked shared_with_friends, so the leaderboard can't lean on
 // private data either. Reuses the same streak/completion math
-// getFriendsSharedHabits() and listHabits() already compute.
-export async function getFriendsLeaderboard(): Promise<LeaderboardEntry[]> {
+// getFriendsSharedHabits() and listHabits() already compute — pass
+// `precomputed` when the caller already fetched both, so this doesn't
+// re-run those queries a second time on the same page load.
+export async function getFriendsLeaderboard(
+  connections?: FriendConnection[],
+  precomputed?: { sharedByFriend: FriendSharedHabits[]; ownHabits: Habit[] },
+): Promise<LeaderboardEntry[]> {
   const { userId } = await requireUserId();
-  const [sharedByFriend, ownHabits] = await Promise.all([getFriendsSharedHabits(), listHabits()]);
+  const [sharedByFriend, ownHabits] = precomputed
+    ? [precomputed.sharedByFriend, precomputed.ownHabits]
+    : await Promise.all([getFriendsSharedHabits(connections), listHabits()]);
 
   const entries: LeaderboardEntry[] = sharedByFriend.map((f) => ({
     id: f.friendId,

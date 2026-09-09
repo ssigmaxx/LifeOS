@@ -525,7 +525,14 @@ export type CrossMetricInsight = {
   sampleSize: number;
 };
 
-async function getDailyMetricMaps(range: DateRange): Promise<Record<DailyMetricKey, Map<string, number>>> {
+// scoreSeries is optional because the Analytics page already fetches it
+// separately for the trend chart — passing it in (a Promise is fine, so the
+// caller doesn't have to await it first and lose parallelism) avoids running
+// the same getDailyScoreSeries query a second time for the same range.
+async function getDailyMetricMaps(
+  range: DateRange,
+  precomputedScoreSeries?: DailyScorePoint[] | Promise<DailyScorePoint[]>,
+): Promise<Record<DailyMetricKey, Map<string, number>>> {
   const { supabase, userId } = await requireUserId();
 
   const [sleep, water, meditation, workout, journal, scoreSeries, carbonKg] = await Promise.all([
@@ -560,7 +567,7 @@ async function getDailyMetricMaps(range: DateRange): Promise<Record<DailyMetricK
       .not("mood", "is", null)
       .gte("entry_date", range.start)
       .lte("entry_date", range.end),
-    getDailyScoreSeries(range),
+    precomputedScoreSeries ?? getDailyScoreSeries(range),
     getDailyCarbonTotals(range),
   ]);
   if (sleep.error) throw sleep.error;
@@ -607,8 +614,11 @@ async function getDailyMetricMaps(range: DateRange): Promise<Record<DailyMetricK
   return { sleepMinutes, waterMl, meditationMinutes, workoutCompleted, journalMood, habitScore, carbonKg };
 }
 
-export async function getCrossMetricInsights(range: DateRange): Promise<CrossMetricInsight[]> {
-  const maps = await getDailyMetricMaps(range);
+export async function getCrossMetricInsights(
+  range: DateRange,
+  precomputedScoreSeries?: DailyScorePoint[] | Promise<DailyScorePoint[]>,
+): Promise<CrossMetricInsight[]> {
+  const maps = await getDailyMetricMaps(range, precomputedScoreSeries);
 
   const insights: CrossMetricInsight[] = [];
   for (const [keyA, keyB] of CANDIDATE_PAIRS) {

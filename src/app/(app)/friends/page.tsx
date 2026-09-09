@@ -2,17 +2,20 @@ import { Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
 import { getFriendsLeaderboard, getFriendsSharedHabits, listFriendConnections } from "@/lib/services/friend-service";
+import { listHabits } from "@/lib/services/habit-service";
 import { AddFriendForm } from "./add-friend-form";
 import { IncomingRequestList, SentRequestList } from "./friend-request-list";
 import { FriendGroup } from "./friend-group";
 import { Leaderboard } from "./leaderboard";
 
 export default async function FriendsPage() {
-  const [connections, sharedHabits, leaderboard] = await Promise.all([
-    listFriendConnections(),
-    getFriendsSharedHabits(),
-    getFriendsLeaderboard(),
-  ]);
+  // Fetched once and threaded through both calls below — getFriendsSharedHabits
+  // and getFriendsLeaderboard would otherwise each independently re-fetch
+  // connections (and getFriendsLeaderboard would re-run the whole shared-habits
+  // query set again too), tripling a couple of these queries on every load.
+  const connections = await listFriendConnections();
+  const [sharedHabits, ownHabits] = await Promise.all([getFriendsSharedHabits(connections), listHabits()]);
+  const leaderboard = await getFriendsLeaderboard(connections, { sharedByFriend: sharedHabits, ownHabits });
 
   const incoming = connections.filter((c) => c.status === "pending" && !c.isRequester);
   const sent = connections.filter((c) => c.status === "pending" && c.isRequester);

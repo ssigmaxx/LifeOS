@@ -50,6 +50,11 @@ export default async function AnalyticsPage({
   const dateRange = resolveRange(range);
   const yearRange = resolveRange("1y");
 
+  // Shared as a promise (not awaited here) with getCrossMetricInsights below
+  // so both run concurrently in the same Promise.all, instead of insights
+  // waiting on this to resolve first, while still only querying it once.
+  const scoreSeriesPromise = getDailyScoreSeries(dateRange);
+
   const [habits, sleep, water, fasting, meditation, workout, journal, scoreSeries, yearSeries, insights] =
     await Promise.all([
       getHabitsAnalytics(dateRange),
@@ -59,9 +64,9 @@ export default async function AnalyticsPage({
       getMeditationAnalytics(dateRange),
       getWorkoutAnalytics(dateRange),
       getJournalAnalytics(dateRange),
-      getDailyScoreSeries(dateRange),
+      scoreSeriesPromise,
       getDailyScoreSeries(yearRange),
-      getCrossMetricInsights(dateRange),
+      getCrossMetricInsights(dateRange, scoreSeriesPromise),
     ]);
 
   const avgHabitCompletion = average(habits.map((h) => h.completionRate));
