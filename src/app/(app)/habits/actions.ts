@@ -6,8 +6,10 @@ import {
   clearHabitLogToday,
   createCategory,
   createHabit,
+  deleteCategory,
   deleteHabit,
   logHabitToday,
+  renameCategory,
   setHabitActive,
   updateHabit,
 } from "@/lib/services/habit-service";
@@ -92,6 +94,32 @@ export async function createCategoryAction(
 
   revalidatePath("/habits");
   return { error: null };
+}
+
+export async function renameCategoryAction(
+  categoryId: string,
+  _prevState: FormActionState,
+  formData: FormData,
+): Promise<FormActionState> {
+  const parsed = newCategorySchema.safeParse({ name: formData.get("name") });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  try {
+    await renameCategory(categoryId, parsed.data.name);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to rename category." };
+  }
+
+  revalidatePath("/habits");
+  return { error: null };
+}
+
+export async function deleteCategoryAction(categoryId: string) {
+  await deleteCategory(categoryId);
+  revalidatePath("/habits");
+  revalidatePath("/today");
 }
 
 export async function pauseHabitAction(habitId: string) {
