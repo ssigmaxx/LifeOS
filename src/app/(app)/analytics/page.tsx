@@ -25,6 +25,7 @@ import {
   type RangePreset,
 } from "@/lib/services/analytics-service";
 import { RangeSelector } from "./range-selector";
+import { ExportDialog } from "./export-dialog";
 import { ScoreTrendChart } from "./score-trend-chart";
 import { HabitComparison } from "./habit-comparison";
 import { MetricCard } from "./metric-card";
@@ -74,7 +75,10 @@ export default async function AnalyticsPage({
             Trends across everything you&apos;re tracking.
           </p>
         </div>
-        <RangeSelector current={range} />
+        <div className="flex flex-wrap items-center gap-2">
+          <RangeSelector current={range} />
+          <ExportDialog />
+        </div>
       </div>
 
       <Card>

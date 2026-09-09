@@ -88,13 +88,16 @@ export type HabitLogEntry = {
 
 // Full log history for data export — everything else in this file only
 // reads today's or the latest log, since that's all the UI needs.
-export async function listHabitLogs(): Promise<HabitLogEntry[]> {
+export async function listHabitLogs(range: { start?: string; end?: string } = {}): Promise<HabitLogEntry[]> {
   const { supabase, userId } = await requireUserId();
-  const { data, error } = await supabase
+  let query = supabase
     .from("habit_logs")
     .select("habit_id, log_date, value_boolean, value_numeric, value_seconds, note")
     .eq("user_id", userId)
     .order("log_date");
+  if (range.start) query = query.gte("log_date", range.start);
+  if (range.end) query = query.lte("log_date", range.end);
+  const { data, error } = await query;
   if (error) throw error;
   return data.map((row) => ({
     habitId: row.habit_id,

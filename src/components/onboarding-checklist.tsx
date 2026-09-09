@@ -2,8 +2,16 @@
 
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Check, X } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Check } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const DISMISS_KEY = "lifeos-onboarding-dismissed";
@@ -42,7 +50,11 @@ export function OnboardingChecklist({ steps }: { steps: OnboardingStep[] }) {
   const [dismissedLocally, setDismissedLocally] = useState(false);
   const allDone = steps.every((s) => s.done);
 
-  if (allDone || dismissedInStorage || dismissedLocally) return null;
+  // Pops up on its own the first time a new-enough user (nothing done yet)
+  // lands here, and stays gone once they dismiss it or finish every step —
+  // no separate "is this a new user" check needed, since a returning user
+  // who already set things up will have allDone === true already.
+  const open = !allDone && !dismissedInStorage && !dismissedLocally;
 
   function dismiss() {
     setDismissedLocally(true);
@@ -54,27 +66,18 @@ export function OnboardingChecklist({ steps }: { steps: OnboardingStep[] }) {
   }
 
   return (
-    <Card className="border-dashed">
-      <CardContent className="space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-sm font-medium">Get started</p>
-            <p className="text-xs text-muted-foreground">A few quick steps to set LifeOS up.</p>
-          </div>
-          <button
-            type="button"
-            onClick={dismiss}
-            aria-label="Dismiss get-started checklist"
-            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={(next) => (!next ? dismiss() : undefined)}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Welcome to LifeOS</DialogTitle>
+          <DialogDescription>A few quick steps to get set up.</DialogDescription>
+        </DialogHeader>
         <div className="space-y-1">
           {steps.map((step) => (
             <Link
               key={step.id}
               href={step.href}
+              onClick={dismiss}
               className="flex items-center gap-2.5 rounded-md px-1.5 py-1.5 text-sm transition-colors hover:bg-accent"
             >
               <span
@@ -89,7 +92,12 @@ export function OnboardingChecklist({ steps }: { steps: OnboardingStep[] }) {
             </Link>
           ))}
         </div>
-      </CardContent>
-    </Card>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={dismiss}>
+            Skip for now
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
