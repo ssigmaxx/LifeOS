@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { listCategories, listHabits, getTodayLogs, type Habit } from "@/lib/services/habit-service";
 import { summarizeToday } from "@/lib/services/today-service";
 import { isLogComplete } from "@/lib/habit-completion";
+import { getLocale } from "@/lib/i18n/get-locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { CategoryFormDialog } from "./category-form-dialog";
 import { CategoryJump } from "./category-jump";
 import { CategoryMenu } from "./category-menu";
@@ -14,6 +16,9 @@ import { HabitFormDialog } from "./habit-form-dialog";
 const UNCATEGORIZED_ID = "uncategorized";
 
 export default async function HabitsPage() {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
   const [habits, categories, todayLogs] = await Promise.all([
     listHabits(),
     listCategories(),
@@ -43,7 +48,7 @@ export default async function HabitsPage() {
     (h) => h.categoryId == null || !categories.some((c) => c.id === h.categoryId),
   );
   if (uncategorizedHabits.length > 0) {
-    categoryGroups.push({ id: UNCATEGORIZED_ID, name: "Uncategorized", habits: uncategorizedHabits });
+    categoryGroups.push({ id: UNCATEGORIZED_ID, name: dict.habits.uncategorized, habits: uncategorizedHabits });
   }
 
   function groupCounts(groupHabits: Habit[]) {
@@ -56,18 +61,16 @@ export default async function HabitsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Habits</h1>
-          <p className="text-sm text-muted-foreground">
-            Create and manage the habits you&apos;re tracking.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{dict.habits.title}</h1>
+          <p className="text-sm text-muted-foreground">{dict.habits.subtitle}</p>
         </div>
         <div className="flex gap-2">
-          <CategoryFormDialog />
+          <CategoryFormDialog dict={dict} />
           <HabitFormDialog
             categories={categories}
             trigger={
               <Button size="sm">
-                <Plus className="size-4" /> Habit
+                <Plus className="size-4" /> {dict.habits.habitButton}
               </Button>
             }
           />
@@ -75,27 +78,26 @@ export default async function HabitsPage() {
       </div>
 
       <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">Score weight</span> sets how much a habit
-        moves your daily score relative to the others — the default is 1, so a habit weighted 2
-        counts twice as much and 0 tracks it without affecting the score at all. It feeds every
-        score you see: Today, Recap, and the Analytics trend chart. Set it from a habit&apos;s
-        edit menu.
+        {dict.habits.scoreWeightNote}
       </p>
 
       {habits.length === 0 ? (
         <EmptyState
           icon={ListChecks}
-          title="No habits yet"
-          description="Create your first habit to start tracking."
+          title={dict.habits.noHabitsTitle}
+          description={dict.habits.noHabitsDescription}
         />
       ) : (
         <div className="space-y-6">
           <div className="space-y-2">
             {activeHabits.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No active habits.</p>
+              <p className="text-sm text-muted-foreground">{dict.habits.noActiveHabits}</p>
             ) : (
               <>
-                <CategoryJump categories={categoryGroups.map((g) => ({ id: g.id, name: g.name }))} />
+                <CategoryJump
+                  categories={categoryGroups.map((g) => ({ id: g.id, name: g.name }))}
+                  placeholder={dict.habits.jumpToCategory}
+                />
                 <div className="space-y-2">
                   {categoryGroups.map((group) => {
                     const { dueCount, doneCount } = groupCounts(group.habits);
@@ -116,13 +118,13 @@ export default async function HabitsPage() {
                           <span className="font-medium">{group.name}</span>
                           <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                             {dueCount > 0
-                              ? `${doneCount}/${dueCount} today`
-                              : `${group.habits.length} habit${group.habits.length === 1 ? "" : "s"}`}
+                              ? `${doneCount}/${dueCount} ${dict.habits.todaySuffix}`
+                              : dict.habits.habitCount(group.habits.length)}
                           </span>
                         </summary>
                         {group.id !== UNCATEGORIZED_ID ? (
                           <div className="absolute top-1.5 right-2">
-                            <CategoryMenu categoryId={group.id} categoryName={group.name} />
+                            <CategoryMenu categoryId={group.id} categoryName={group.name} dict={dict} />
                           </div>
                         ) : null}
                         <div className="space-y-2 border-t px-3 pt-2 pb-3">
@@ -146,7 +148,7 @@ export default async function HabitsPage() {
           {inactiveHabits.length > 0 ? (
             <div className="space-y-2">
               <h2 className="text-sm font-medium text-muted-foreground">
-                Paused &amp; archived
+                {dict.habits.pausedArchived}
               </h2>
               {inactiveHabits.map((habit) => (
                 <HabitCard

@@ -29,11 +29,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { deleteCategoryAction, renameCategoryAction, type FormActionState } from "./actions";
 
 const initialState: FormActionState = { error: null };
 
-export function CategoryMenu({ categoryId, categoryName }: { categoryId: string; categoryName: string }) {
+export function CategoryMenu({
+  categoryId,
+  categoryName,
+  dict,
+}: {
+  categoryId: string;
+  categoryName: string;
+  dict: Dictionary;
+}) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const action = renameCategoryAction.bind(null, categoryId);
@@ -55,10 +64,10 @@ export function CategoryMenu({ categoryId, categoryName }: { categoryId: string;
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setRenameOpen(true)}>
-            <Pencil className="size-4" /> Rename
+            <Pencil className="size-4" /> {dict.habits.categoryMenu.rename}
           </DropdownMenuItem>
           <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-            <Trash2 className="size-4" /> Delete category
+            <Trash2 className="size-4" /> {dict.habits.categoryMenu.deleteCategory}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -66,12 +75,12 @@ export function CategoryMenu({ categoryId, categoryName }: { categoryId: string;
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Rename category</DialogTitle>
-            <DialogDescription>This updates it everywhere it&apos;s shown.</DialogDescription>
+            <DialogTitle>{dict.habits.categoryMenu.renameTitle}</DialogTitle>
+            <DialogDescription>{dict.habits.categoryMenu.renameDescription}</DialogDescription>
           </DialogHeader>
           <form action={formAction} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor={`rename-${categoryId}`}>Name</Label>
+              <Label htmlFor={`rename-${categoryId}`}>{dict.habits.categoryMenu.nameLabel}</Label>
               <Input
                 id={`rename-${categoryId}`}
                 name="name"
@@ -88,7 +97,7 @@ export function CategoryMenu({ categoryId, categoryName }: { categoryId: string;
             ) : null}
             <DialogFooter>
               <Button type="submit" disabled={isPending}>
-                {isPending ? "Saving…" : "Save"}
+                {isPending ? dict.habits.categoryMenu.saving : dict.habits.categoryMenu.save}
               </Button>
             </DialogFooter>
           </form>
@@ -98,14 +107,11 @@ export function CategoryMenu({ categoryId, categoryName }: { categoryId: string;
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete &quot;{categoryName}&quot;?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Habits in this category aren&apos;t deleted — they move to Uncategorized. This
-              can&apos;t be undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{dict.habits.categoryMenu.deleteTitle(categoryName)}</AlertDialogTitle>
+            <AlertDialogDescription>{dict.habits.categoryMenu.deleteDescription}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{dict.habits.categoryMenu.cancel}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive-solid"
               onClick={() => {
@@ -113,7 +119,7 @@ export function CategoryMenu({ categoryId, categoryName }: { categoryId: string;
                 deleteCategoryAction(categoryId);
               }}
             >
-              Delete
+              {dict.habits.categoryMenu.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

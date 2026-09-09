@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export function CategoryJump({ categories }: { categories: { id: string; name: string }[] }) {
+export function CategoryJump({
+  categories,
+  placeholder,
+}: {
+  categories: { id: string; name: string }[];
+  placeholder: string;
+}) {
   const [value, setValue] = useState("");
 
   if (categories.length < 2) return null;
@@ -24,7 +30,7 @@ export function CategoryJump({ categories }: { categories: { id: string; name: s
       }}
     >
       <SelectTrigger className="w-full sm:w-52">
-        <SelectValue placeholder="Jump to category…" />
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
         {categories.map((c) => (

@@ -6,10 +6,13 @@ import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { primaryNavSections, settingsNavItem, type NavItem } from "@/lib/nav";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { NavUser } from "@/components/nav-user";
 import { CommandPaletteTrigger } from "@/components/command-palette";
+import type { Locale } from "@/lib/i18n/locale";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({ item, active, dict }: { item: NavItem; active: boolean; dict: Dictionary }) {
   return (
     <Link
       href={item.href}
@@ -21,12 +24,20 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       )}
     >
       <item.icon className="size-4 shrink-0" />
-      {item.label}
+      {dict.nav[item.labelKey]}
     </Link>
   );
 }
 
-export function AppSidebar({ userEmail }: { userEmail: string }) {
+export function AppSidebar({
+  userEmail,
+  locale,
+  dict,
+}: {
+  userEmail: string;
+  locale: Locale;
+  dict: Dictionary;
+}) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
@@ -36,28 +47,31 @@ export function AppSidebar({ userEmail }: { userEmail: string }) {
         <Sparkles className="size-5 text-primary" />
         <span className="text-lg font-semibold tracking-tight">LifeOS</span>
       </div>
+      <div className="px-3 pb-2">
+        <LanguageSwitcher locale={locale} className="w-full" />
+      </div>
       <div className="px-3 pb-3">
         <CommandPaletteTrigger />
       </div>
       <nav className="flex-1 space-y-4 px-3">
         {primaryNavSections.map((section) => (
-          <div key={section.label} className="space-y-1">
+          <div key={section.labelKey} className="space-y-1">
             <p className="px-3 text-xs font-medium tracking-wide text-sidebar-foreground/50 uppercase">
-              {section.label}
+              {dict.nav[section.labelKey]}
             </p>
             {section.items.map((item) => (
-              <NavLink key={item.href} item={item} active={isActive(item.href)} />
+              <NavLink key={item.href} item={item} active={isActive(item.href)} dict={dict} />
             ))}
           </div>
         ))}
         <div className="space-y-1 border-t border-sidebar-border pt-3">
-          <NavLink item={settingsNavItem} active={isActive(settingsNavItem.href)} />
+          <NavLink item={settingsNavItem} active={isActive(settingsNavItem.href)} dict={dict} />
         </div>
       </nav>
       <div className="space-y-2 border-t px-3 py-3">
         <NavUser email={userEmail} />
         <div className="flex items-center justify-between px-1">
-          <span className="text-xs text-sidebar-foreground/60">Theme</span>
+          <span className="text-xs text-sidebar-foreground/60">{dict.common.theme}</span>
           <ThemeToggle />
         </div>
       </div>
