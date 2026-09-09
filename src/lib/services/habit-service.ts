@@ -271,11 +271,15 @@ export async function updateHabit(id: string, values: HabitFormValues): Promise<
   await replaceSchedule(supabase, id, values.frequency === "custom" ? values.weekdays : []);
 }
 
+// Reactivating always clears end_date too — archiveHabit stamps it, and a
+// habit that's active again shouldn't still carry an "ended" date, or
+// isHabitDueToday (streaks.ts) keeps treating it as ended forever after
+// that date even though it looks fully active everywhere else.
 export async function setHabitActive(id: string, isActive: boolean): Promise<void> {
   const { supabase } = await requireUserId();
   const { error } = await supabase
     .from("habits")
-    .update({ is_active: isActive })
+    .update(isActive ? { is_active: true, end_date: null } : { is_active: false })
     .eq("id", id);
   if (error) throw error;
 }

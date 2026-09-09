@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { runAction } from "@/lib/toast-action";
 import { setCycleTrackingEnabledAction } from "../cycle/actions";
 
 export function CycleTrackingToggle({ initialEnabled }: { initialEnabled: boolean }) {
@@ -12,12 +12,15 @@ export function CycleTrackingToggle({ initialEnabled }: { initialEnabled: boolea
   const [isPending, startTransition] = useTransition();
 
   function toggle(next: boolean) {
-    setEnabled(next);
-    startTransition(() => {
-      void runAction(setCycleTrackingEnabledAction(next), {
-        success: next ? "Cycle tracking is on — check the nav for it." : "Cycle tracking is off.",
-        error: "Failed to update.",
-      });
+    setEnabled(next); // optimistic — rolled back below if the save fails
+    startTransition(async () => {
+      try {
+        await setCycleTrackingEnabledAction(next);
+        toast.success(next ? "Cycle tracking is on — check the nav for it." : "Cycle tracking is off.");
+      } catch (err) {
+        setEnabled(!next);
+        toast.error(err instanceof Error ? err.message : "Failed to update.");
+      }
     });
   }
 

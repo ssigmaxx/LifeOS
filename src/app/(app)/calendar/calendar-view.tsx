@@ -126,7 +126,13 @@ async function persistTimeChange(id: string, start: Date, end: Date | null, reve
   }
 }
 
-export function CalendarView({ calendars }: { calendars: Calendar[] }) {
+export function CalendarView({
+  calendars,
+  cycleTrackingEnabled,
+}: {
+  calendars: Calendar[];
+  cycleTrackingEnabled: boolean;
+}) {
   const router = useRouter();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -159,15 +165,17 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
       fetch(`/api/calendar/events?${params}`),
       fetch(`/api/calendar/goal-events?${params}`),
       fetch(`/api/calendar/todo-events?${params}`),
-      fetch(`/api/calendar/cycle-events?${params}`),
+      // Cycle tracking is opt-in — skip the request entirely for the common
+      // case where it's off, rather than firing a fetch that always
+      // resolves to an empty result anyway.
+      cycleTrackingEnabled ? fetch(`/api/calendar/cycle-events?${params}`) : null,
     ]);
     if (!eventsResponse.ok) throw new Error("Failed to load events");
     const events: CalendarEvent[] = await eventsResponse.json();
     const goalEvents: GoalCalendarEvent[] = goalEventsResponse.ok ? await goalEventsResponse.json() : [];
     const todoEvents: TodoCalendarEvent[] = todoEventsResponse.ok ? await todoEventsResponse.json() : [];
-    const cycleEvents: { periodDates: string[]; pmsDates: string[] } = cycleEventsResponse.ok
-      ? await cycleEventsResponse.json()
-      : { periodDates: [], pmsDates: [] };
+    const cycleEvents: { periodDates: string[]; pmsDates: string[] } =
+      cycleEventsResponse?.ok ? await cycleEventsResponse.json() : { periodDates: [], pmsDates: [] };
     return [
       ...events.map(toEventInput),
       ...goalEvents.map(toGoalEventInput),
@@ -175,7 +183,7 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
       ...cycleEvents.periodDates.map(toCycleEventInput),
       ...cycleEvents.pmsDates.map(toCyclePmsEventInput),
     ];
-  }, []);
+  }, [cycleTrackingEnabled]);
 
   const handleEventClick = useCallback(
     (info: EventClickInfo) => {

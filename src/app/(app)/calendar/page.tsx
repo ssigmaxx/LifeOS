@@ -27,7 +27,7 @@ export default async function CalendarPage() {
         />
       </div>
 
-      <CalendarView calendars={calendars} />
+      <CalendarView calendars={calendars} cycleTrackingEnabled={cycleTrackingEnabled} />
     </div>
   );
 }

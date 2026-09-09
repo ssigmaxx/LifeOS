@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { estimateNextPeriod, type CyclePrediction } from "@/lib/cycle-prediction";
+import { addDays, estimateNextPeriod, type CyclePrediction } from "@/lib/cycle-prediction";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -13,12 +13,6 @@ async function requireUserId() {
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function addDays(dateISO: string, days: number): string {
-  const date = new Date(`${dateISO}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
 }
 
 export type PeriodFlow = "spotting" | "light" | "medium" | "heavy";
