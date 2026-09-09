@@ -182,12 +182,16 @@ export function CalendarView({ calendars }: { calendars: Calendar[] }) {
   return (
     <>
       <EventCalendar
-        height="auto"
+        height={700}
         timeZone="UTC"
         nowIndicator
         navLinks
         editable
         selectable
+        firstDay={1}
+        slotDuration="01:00:00"
+        slotHeaderInterval="01:00:00"
+        scrollTime="07:00:00"
         availableViews={["dayGridMonth", "timeGridWeek", "timeGridDay"]}
         addButton={addButton}
         events={events}
