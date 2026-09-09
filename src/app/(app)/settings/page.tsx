@@ -2,17 +2,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { getNotificationPreferences } from "@/lib/services/notification-service";
 import { isCycleTrackingEnabled } from "@/lib/services/cycle-service";
 import { getProfile } from "@/lib/services/profile-service";
+import { isLockEnabled } from "@/lib/services/lock-service";
 import { NotificationSettingsForm } from "./notification-settings-form";
 import { CycleTrackingToggle } from "./cycle-tracking-toggle";
 import { ProfileForm } from "./profile-form";
 import { PasswordForm } from "./password-form";
+import { LockSettingsForm } from "./lock-settings-form";
 import { ReplayTourButton } from "./replay-tour-button";
 
 export default async function SettingsPage() {
-  const [preferences, cycleTrackingEnabled, profile] = await Promise.all([
+  const [preferences, cycleTrackingEnabled, profile, lockEnabled] = await Promise.all([
     getNotificationPreferences(),
     isCycleTrackingEnabled(),
     getProfile(),
+    isLockEnabled(),
   ]);
 
   return (
@@ -33,6 +36,7 @@ export default async function SettingsPage() {
           auto-enable) wouldn't otherwise be picked up by an
           already-mounted instance — this forces a remount instead. */}
       <CycleTrackingToggle key={String(cycleTrackingEnabled)} initialEnabled={cycleTrackingEnabled} />
+      <LockSettingsForm key={String(lockEnabled)} initialEnabled={lockEnabled} />
 
       <Card>
         <CardHeader>

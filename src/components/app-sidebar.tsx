@@ -8,6 +8,7 @@ import { primaryNavSections, settingsNavItem, type NavItem } from "@/lib/nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { NavUser } from "@/components/nav-user";
+import { LockButton } from "@/components/app-lock";
 import { CommandPaletteTrigger } from "@/components/command-palette";
 import type { Locale } from "@/lib/i18n/locale";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -118,7 +119,10 @@ export function AppSidebar({
         <NavUser email={userEmail} displayName={displayName} avatarIcon={avatarIcon} />
         <div className="flex items-center justify-between px-1">
           <span className="text-xs text-sidebar-foreground/60">{themeLabel}</span>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <LockButton />
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </aside>

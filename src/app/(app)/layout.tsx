@@ -6,6 +6,7 @@ import { getDictionary } from "@/lib/i18n/dictionaries";
 import { isCycleTrackingEnabled } from "@/lib/services/cycle-service";
 import { getProfile } from "@/lib/services/profile-service";
 import { getPendingFriendRequestCount } from "@/lib/services/friend-service";
+import { isLockEnabled } from "@/lib/services/lock-service";
 
 export default async function AppGroupLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
@@ -23,6 +24,7 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
     cycleTrackingEnabled,
     profile,
     pendingFriendRequestCount,
+    lockEnabled,
   ] = await Promise.all([
     supabase.auth.getUser(),
     getLocale(),
@@ -41,6 +43,11 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
       email: "",
     })),
     getPendingFriendRequestCount().catch(() => 0),
+    // Same reasoning as getProfile() above: falls back to "no lock" rather
+    // than throwing if this table/column isn't there yet, since a locked-out
+    // app (or a crashed one) would be strictly worse than an app that just
+    // doesn't offer the lock feature yet.
+    isLockEnabled().catch(() => false),
   ]);
   const dict = getDictionary(locale);
 
@@ -55,6 +62,7 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
       dict={dict}
       cycleTrackingEnabled={cycleTrackingEnabled}
       pendingFriendRequestCount={pendingFriendRequestCount}
+      lockEnabled={lockEnabled}
     >
       {children}
     </AppShell>
