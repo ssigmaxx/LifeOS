@@ -77,6 +77,35 @@ export async function deleteCategory(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export type HabitLogEntry = {
+  habitId: string;
+  logDate: string;
+  valueBoolean: boolean | null;
+  valueNumeric: number | null;
+  valueSeconds: number | null;
+  note: string | null;
+};
+
+// Full log history for data export — everything else in this file only
+// reads today's or the latest log, since that's all the UI needs.
+export async function listHabitLogs(): Promise<HabitLogEntry[]> {
+  const { supabase, userId } = await requireUserId();
+  const { data, error } = await supabase
+    .from("habit_logs")
+    .select("habit_id, log_date, value_boolean, value_numeric, value_seconds, note")
+    .eq("user_id", userId)
+    .order("log_date");
+  if (error) throw error;
+  return data.map((row) => ({
+    habitId: row.habit_id,
+    logDate: row.log_date,
+    valueBoolean: row.value_boolean,
+    valueNumeric: row.value_numeric,
+    valueSeconds: row.value_seconds,
+    note: row.note,
+  }));
+}
+
 export async function listHabits(): Promise<Habit[]> {
   const { supabase, userId } = await requireUserId();
 

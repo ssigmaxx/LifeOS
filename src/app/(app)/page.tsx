@@ -10,6 +10,7 @@ import { listGoals } from "@/lib/services/goal-service";
 import { getDailyScoreSeries, resolveRange } from "@/lib/services/analytics-service";
 import { getDailyTotals, getNutritionProfile } from "@/lib/services/nutrition-service";
 import { getTodosDueOnDate } from "@/lib/services/todo-service";
+import { OnboardingChecklist, type OnboardingStep } from "@/components/onboarding-checklist";
 import { ScoreTrendChart } from "./analytics/score-trend-chart";
 import { NutritionCard } from "./today/nutrition-card";
 
@@ -37,6 +38,12 @@ export default async function DashboardPage() {
     .slice(0, 5);
   const activeGoals = goals.filter((g) => g.status === "active").slice(0, 3);
 
+  const onboardingSteps: OnboardingStep[] = [
+    { id: "habit", label: "Add your first habit", href: "/habits", done: habits.length > 0 },
+    { id: "goal", label: "Set a goal", href: "/goals", done: goals.length > 0 },
+    { id: "log", label: "Log something today", href: "/today", done: summary.completedCount > 0 },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -45,6 +52,8 @@ export default async function DashboardPage() {
           Your at-a-glance overview of habits, streaks, and recent trends.
         </p>
       </div>
+
+      <OnboardingChecklist steps={onboardingSteps} />
 
       <Link href="/today" className="block">
         <Card className="transition-shadow hover:shadow-md">
