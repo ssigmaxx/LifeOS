@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { buildRecentDayLevels, calculateStreaks, type DayLevel, type StreakResult } from "@/lib/streaks";
+import { calculateStreaks, type StreakResult } from "@/lib/streaks";
 import { isLogComplete, type TrackingType } from "@/lib/habit-completion";
 import type { HabitFormValues } from "@/lib/validations/habit";
 
@@ -25,11 +25,8 @@ export type Habit = {
   endDate: string | null;
   scheduleWeekdays: number[];
   streak: StreakResult;
-  recentDays: { date: string; level: DayLevel }[];
   sharedWithFriends: boolean;
 };
-
-const RECENT_DAYS_WINDOW = 70; // 10 weeks, to fit a compact heatmap
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -64,6 +61,20 @@ export async function createCategory(name: string): Promise<HabitCategory> {
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function renameCategory(id: string, name: string): Promise<void> {
+  const { supabase } = await requireUserId();
+  const { error } = await supabase.from("habit_categories").update({ name }).eq("id", id);
+  if (error) throw error;
+}
+
+// Habits in this category aren't deleted — habits.category_id references
+// this table with ON DELETE SET NULL, so they fall back to Uncategorized.
+export async function deleteCategory(id: string): Promise<void> {
+  const { supabase } = await requireUserId();
+  const { error } = await supabase.from("habit_categories").delete().eq("id", id);
+  if (error) throw error;
 }
 
 export async function listHabits(): Promise<Habit[]> {
@@ -132,14 +143,6 @@ export async function listHabits(): Promise<Habit[]> {
       today,
     });
 
-    const recentDays = buildRecentDayLevels({
-      logs,
-      scheduleWeekdays: scheduleByHabit.get(row.id) ?? [],
-      startDate: row.start_date,
-      today,
-      days: RECENT_DAYS_WINDOW,
-    });
-
     return {
       id: row.id,
       categoryId: row.category_id,
@@ -155,7 +158,6 @@ export async function listHabits(): Promise<Habit[]> {
       endDate: row.end_date,
       scheduleWeekdays: scheduleByHabit.get(row.id) ?? [],
       streak,
-      recentDays,
       sharedWithFriends: row.shared_with_friends,
     };
   });

@@ -1,11 +1,13 @@
 import { ChevronRight, Plus, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { cn } from "@/lib/utils";
 import { listCategories, listHabits, getTodayLogs, type Habit } from "@/lib/services/habit-service";
 import { summarizeToday } from "@/lib/services/today-service";
 import { isLogComplete } from "@/lib/habit-completion";
 import { CategoryFormDialog } from "./category-form-dialog";
 import { CategoryJump } from "./category-jump";
+import { CategoryMenu } from "./category-menu";
 import { HabitCard } from "./habit-card";
 import { HabitFormDialog } from "./habit-form-dialog";
 
@@ -101,10 +103,15 @@ export default async function HabitsPage() {
                       <details
                         key={group.id}
                         id={`category-${group.id}`}
-                        className="group rounded-xl border bg-card"
+                        className="group relative rounded-xl border bg-card"
                         open
                       >
-                        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                        <summary
+                          className={cn(
+                            "flex cursor-pointer list-none items-center gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden",
+                            group.id !== UNCATEGORIZED_ID && "pr-11",
+                          )}
+                        >
                           <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
                           <span className="font-medium">{group.name}</span>
                           <span className="ml-auto shrink-0 text-xs text-muted-foreground">
@@ -113,6 +120,11 @@ export default async function HabitsPage() {
                               : `${group.habits.length} habit${group.habits.length === 1 ? "" : "s"}`}
                           </span>
                         </summary>
+                        {group.id !== UNCATEGORIZED_ID ? (
+                          <div className="absolute top-1.5 right-2">
+                            <CategoryMenu categoryId={group.id} categoryName={group.name} />
+                          </div>
+                        ) : null}
                         <div className="space-y-2 border-t px-3 pt-2 pb-3">
                           {group.habits.map((habit) => (
                             <HabitCard
