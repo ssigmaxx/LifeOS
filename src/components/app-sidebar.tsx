@@ -42,12 +42,16 @@ function NavLink({ item, active, nav }: { item: NavItem; active: boolean; nav: N
 
 export function AppSidebar({
   userEmail,
+  displayName,
+  avatarIcon,
   locale,
   nav,
   themeLabel,
   cycleTrackingEnabled,
 }: {
   userEmail: string;
+  displayName?: string | null;
+  avatarIcon?: string | null;
   locale: Locale;
   nav: NavDict;
   themeLabel: string;
@@ -88,7 +92,7 @@ export function AppSidebar({
         </div>
       </nav>
       <div className="space-y-2 border-t px-3 py-3">
-        <NavUser email={userEmail} />
+        <NavUser email={userEmail} displayName={displayName} avatarIcon={avatarIcon} />
         <div className="flex items-center justify-between px-1">
           <span className="text-xs text-sidebar-foreground/60">{themeLabel}</span>
           <ThemeToggle />

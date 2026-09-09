@@ -10,6 +10,10 @@ import {
   type PushSubscriptionInput,
 } from "@/lib/services/notification-service";
 import { sendPushNotification } from "@/lib/notifications/push";
+import { updateProfile, type ProfileUpdate } from "@/lib/services/profile-service";
+import { profileFormSchema } from "@/lib/validations/profile";
+import { updatePasswordSchema } from "@/lib/validations/auth";
+import { createClient } from "@/lib/supabase/server";
 
 export type ActionResult = { error: string | null };
 
@@ -65,4 +69,44 @@ export async function sendTestNotificationAction(): Promise<ActionResult> {
   await Promise.all(staleEndpoints.map((endpoint) => removePushSubscription(endpoint)));
 
   return results.some((r) => r.ok) ? { error: null } : { error: "Failed to send test notification." };
+}
+
+export async function updateProfileAction(values: {
+  displayName: string;
+  avatarIcon: string;
+  birthDate: string;
+}): Promise<ActionResult> {
+  const parsed = profileFormSchema.safeParse(values);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  try {
+    await updateProfile(parsed.data as ProfileUpdate);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to save profile." };
+  }
+  revalidatePath("/settings");
+  revalidatePath("/", "layout");
+  return { error: null };
+}
+
+// Deliberately not a reuse of the shared updatePassword action in
+// (auth)/actions.ts — that one redirects to "/" on success, which would
+// navigate the user away from Settings instead of just confirming in place.
+export async function updateOwnPasswordAction(values: {
+  password: string;
+  confirmPassword: string;
+}): Promise<ActionResult> {
+  const parsed = updatePasswordSchema.safeParse(values);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (error) {
+    return { error: error.message };
+  }
+  return { error: null };
 }

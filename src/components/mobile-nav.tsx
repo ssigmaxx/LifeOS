@@ -22,10 +22,14 @@ type NavDict = Dictionary["nav"];
 
 export function MobileNav({
   userEmail,
+  displayName,
+  avatarIcon,
   nav,
   cycleTrackingEnabled,
 }: {
   userEmail: string;
+  displayName?: string | null;
+  avatarIcon?: string | null;
   nav: NavDict;
   cycleTrackingEnabled: boolean;
 }) {
@@ -95,7 +99,7 @@ export function MobileNav({
             })}
           </div>
           <div className="border-t px-4 pt-4">
-            <NavUser email={userEmail} />
+            <NavUser email={userEmail} displayName={displayName} avatarIcon={avatarIcon} />
           </div>
         </SheetContent>
       </Sheet>

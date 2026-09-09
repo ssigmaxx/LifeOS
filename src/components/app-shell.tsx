@@ -11,12 +11,16 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 export function AppShell({
   children,
   userEmail,
+  displayName,
+  avatarIcon,
   locale,
   dict,
   cycleTrackingEnabled,
 }: {
   children: ReactNode;
   userEmail: string;
+  displayName?: string | null;
+  avatarIcon?: string | null;
   locale: Locale;
   dict: Dictionary;
   cycleTrackingEnabled: boolean;
@@ -26,6 +30,8 @@ export function AppShell({
       <div className="flex min-h-svh w-full">
         <AppSidebar
           userEmail={userEmail}
+          displayName={displayName}
+          avatarIcon={avatarIcon}
           locale={locale}
           nav={dict.nav}
           themeLabel={dict.common.theme}
@@ -49,7 +55,13 @@ export function AppShell({
             </div>
           </main>
         </div>
-        <MobileNav userEmail={userEmail} nav={dict.nav} cycleTrackingEnabled={cycleTrackingEnabled} />
+        <MobileNav
+          userEmail={userEmail}
+          displayName={displayName}
+          avatarIcon={avatarIcon}
+          nav={dict.nav}
+          cycleTrackingEnabled={cycleTrackingEnabled}
+        />
       </div>
     </CommandPaletteProvider>
   );
