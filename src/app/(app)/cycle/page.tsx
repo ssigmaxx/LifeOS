@@ -1,10 +1,16 @@
 import Link from "next/link";
-import { HeartPulse } from "lucide-react";
+import { CalendarHeart, HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
 import { FLOW_LABELS } from "@/lib/cycle-constants";
-import { getCycleLog, isCycleTrackingEnabled, listCycleLogs, type CycleLog } from "@/lib/services/cycle-service";
+import {
+  getCycleLog,
+  isCycleTrackingEnabled,
+  listCycleLogs,
+  predictNextPeriod,
+  type CycleLog,
+} from "@/lib/services/cycle-service";
 import { CycleLogForm } from "./cycle-log-form";
 import { DateNav } from "./date-nav";
 
@@ -68,9 +74,10 @@ export default async function CyclePage({
   const { date: dateParam } = await searchParams;
   const date = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam <= todayISO() ? dateParam : todayISO();
 
-  const [log, history] = await Promise.all([
+  const [log, history, prediction] = await Promise.all([
     getCycleLog(date),
     listCycleLogs({ start: isoDaysAgo(90) }),
+    predictNextPeriod(),
   ]);
   const loggedHistory = history.filter(hasAnyData);
 
@@ -83,6 +90,29 @@ export default async function CyclePage({
         </div>
         <DateNav date={date} />
       </div>
+
+      <Card className="border-pink-500/30 bg-pink-500/5">
+        <CardContent className="flex items-center gap-3">
+          <CalendarHeart className="size-5 shrink-0 text-pink-500 dark:text-pink-400" />
+          {prediction.nextPeriodStart && prediction.averageCycleLengthDays != null ? (
+            <div>
+              <p className="text-sm font-medium text-pink-700 dark:text-pink-300">
+                Next period estimated {formatDate(prediction.nextPeriodStart)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Based on your last {prediction.cyclesUsed} logged cycle{prediction.cyclesUsed === 1 ? "" : "s"}{" "}
+                (avg {prediction.averageCycleLengthDays} days) — an estimate from your own history, not medical
+                advice.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Log two full periods to see a next-period estimate here — it&apos;s calculated from the gap between
+              your own past cycles.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <CycleLogForm key={date} date={date} log={log} />
 

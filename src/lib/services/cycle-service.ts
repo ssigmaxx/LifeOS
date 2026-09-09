@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { estimateNextPeriod, type CyclePrediction } from "@/lib/cycle-prediction";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -12,6 +13,12 @@ async function requireUserId() {
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function addDays(dateISO: string, days: number): string {
+  const date = new Date(`${dateISO}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 export type PeriodFlow = "spotting" | "light" | "medium" | "heavy";
@@ -130,4 +137,15 @@ export async function deleteCycleLog(date: string): Promise<void> {
     .eq("user_id", userId)
     .eq("log_date", date);
   if (error) throw error;
+}
+
+export type { CyclePrediction };
+
+// Estimates the next period from the user's own logged history — see
+// cycle-prediction.ts for why there's no external API involved and for
+// the (unit-tested) algorithm itself.
+export async function predictNextPeriod(): Promise<CyclePrediction> {
+  const logs = await listCycleLogs({ start: addDays(todayISO(), -365) });
+  const periodDates = logs.filter((l) => l.periodFlow != null).map((l) => l.logDate);
+  return estimateNextPeriod(periodDates);
 }

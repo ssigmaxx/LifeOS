@@ -19,17 +19,22 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 type NavDict = Dictionary["nav"];
 
 function NavLink({ item, active, nav }: { item: NavItem; active: boolean; nav: NavDict }) {
+  const isCycle = item.href === "/cycle";
   return (
     <Link
       href={item.href}
       className={cn(
         "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-        active
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        isCycle
+          ? active
+            ? "bg-pink-500/15 text-pink-600 dark:text-pink-400"
+            : "text-pink-600/70 hover:bg-pink-500/10 hover:text-pink-600 dark:text-pink-400/70 dark:hover:text-pink-400"
+          : active
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
       )}
     >
-      <item.icon className="size-4 shrink-0" />
+      <item.icon className={cn("size-4 shrink-0", isCycle && "text-pink-500 dark:text-pink-400")} />
       {nav[item.labelKey]}
     </Link>
   );

@@ -76,17 +76,23 @@ export function MobileNav({
             <SheetTitle>{nav.more}</SheetTitle>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-3 px-4">
-            {visibleMoreNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className="flex flex-col items-center gap-2 rounded-lg border p-4 text-sm font-medium hover:bg-accent"
-              >
-                <item.icon className="size-5" />
-                {nav[item.labelKey]}
-              </Link>
-            ))}
+            {visibleMoreNav.map((item) => {
+              const isCycle = item.href === "/cycle";
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 rounded-lg border p-4 text-sm font-medium hover:bg-accent",
+                    isCycle && "border-pink-500/30 text-pink-600 dark:text-pink-400",
+                  )}
+                >
+                  <item.icon className={cn("size-5", isCycle && "text-pink-500 dark:text-pink-400")} />
+                  {nav[item.labelKey]}
+                </Link>
+              );
+            })}
           </div>
           <div className="border-t px-4 pt-4">
             <NavUser email={userEmail} />
