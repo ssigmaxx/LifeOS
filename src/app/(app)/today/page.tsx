@@ -17,10 +17,6 @@ import { getTodayEntries } from "@/lib/services/journal-service";
 import { getTodayPhotos } from "@/lib/services/photo-service";
 import { getDailyTotals, getNutritionProfile } from "@/lib/services/nutrition-service";
 import { getTodayCarbonTotal } from "@/lib/services/carbon-service";
-import { getLocale } from "@/lib/i18n/get-locale";
-import { getDictionary, type Dictionary } from "@/lib/i18n/dictionaries";
-import { intlTag } from "@/lib/i18n/locale";
-import { formatTemplate, pluralize } from "@/lib/i18n/format";
 import { TodayHabitRow } from "./today-habit-row";
 import { WaterCard } from "./water-card";
 import { SleepCard } from "./sleep-card";
@@ -32,17 +28,14 @@ import { PhotosCard } from "./photos-card";
 import { NutritionCard } from "./nutrition-card";
 import { FootprintCard } from "./footprint-card";
 
-function greeting(hour: number, dict: Dictionary) {
-  if (hour < 5) return dict.today.goodNight;
-  if (hour < 12) return dict.today.goodMorning;
-  if (hour < 18) return dict.today.goodAfternoon;
-  return dict.today.goodEvening;
+function greeting(hour: number) {
+  if (hour < 5) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 export default async function TodayPage() {
-  const locale = await getLocale();
-  const dict = getDictionary(locale);
-
   const [
     summary,
     water,
@@ -72,7 +65,7 @@ export default async function TodayPage() {
   ]);
 
   const today = new Date();
-  const dateLabel = today.toLocaleDateString(intlTag(locale), {
+  const dateLabel = today.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -83,12 +76,12 @@ export default async function TodayPage() {
   const waterPct = water.targetMl > 0 ? water.totalMl / water.targetMl : 0;
   const rings = [
     {
-      label: dict.today.habitsSection,
+      label: "Habits",
       value: habitsPct,
       valueLabel: summary.totalCount > 0 ? `${summary.completedCount}/${summary.totalCount}` : "—",
     },
     {
-      label: dict.today.water,
+      label: "Water",
       value: waterPct,
       valueLabel: `${(water.totalMl / 1000).toFixed(1)}/${(water.targetMl / 1000).toFixed(1)}L`,
     },
@@ -98,7 +91,7 @@ export default async function TodayPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          {greeting(today.getHours(), dict)}
+          {greeting(today.getHours())}
         </h1>
         <p className="text-sm text-muted-foreground">{dateLabel}</p>
       </div>
@@ -112,17 +105,14 @@ export default async function TodayPage() {
               </span>
             </RadialProgress>
             <div>
-              <p className="text-sm text-muted-foreground">{dict.today.todaysScore}</p>
+              <p className="text-sm text-muted-foreground">Today&apos;s score</p>
               {summary.totalCount > 0 ? (
                 <p className="text-sm font-medium">
-                  {formatTemplate(dict.today.habitsDone, {
-                    completed: summary.completedCount,
-                    total: summary.totalCount,
-                  })}
+                  {summary.completedCount} of {summary.totalCount} habits done
                 </p>
               ) : null}
               <Link href="/recap" className="text-xs text-muted-foreground hover:underline">
-                {dict.today.seeRecap}
+                See today&apos;s recap →
               </Link>
             </div>
           </div>
@@ -136,32 +126,32 @@ export default async function TodayPage() {
       <StatTileRow
         tiles={[
           {
-            label: dict.today.sleep,
+            label: "Sleep",
             value: latestSleep ? formatMinutes(latestSleep.durationMinutes) : "—",
             hint: latestSleep?.quality != null
-              ? formatTemplate(dict.today.quality, { n: latestSleep.quality })
+              ? `${latestSleep.quality}/5 quality`
               : latestSleep
                 ? undefined
-                : dict.today.notLogged,
+                : "Not logged",
             tone: "neutral",
           },
           {
-            label: dict.today.meditation,
+            label: "Meditation",
             value: formatMinutes(meditation.totalMinutes),
             hint:
               meditation.sessionCount > 0
-                ? pluralize(meditation.sessionCount, dict.today.sessionOne, dict.today.sessionOther)
-                : dict.today.notLogged,
+                ? `${meditation.sessionCount} session${meditation.sessionCount === 1 ? "" : "s"}`
+                : "Not logged",
             tone: "neutral",
           },
           {
-            label: dict.today.workout,
+            label: "Workout",
             value: workout?.completed ? formatMinutes(workout.durationMinutes ?? 0) : "—",
-            hint: workout?.workoutType ?? (workout?.completed ? undefined : dict.today.notLogged),
+            hint: workout?.workoutType ?? (workout?.completed ? undefined : "Not logged"),
             tone: "neutral",
           },
           {
-            label: dict.today.co2eToday,
+            label: "CO₂e today",
             value: `${footprint.totalCo2eKg.toFixed(1)} kg`,
             tone: "neutral",
           },
@@ -169,12 +159,12 @@ export default async function TodayPage() {
       />
 
       <div className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">{dict.today.habitsSection}</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">Habits</h2>
         {summary.dueHabits.length === 0 ? (
           <EmptyState
             icon={ListChecks}
-            title={dict.today.noHabitsTitle}
-            description={dict.today.noHabitsDescription}
+            title="Nothing scheduled today"
+            description="Create a habit or check its schedule."
             action={
               <Button
                 size="sm"
@@ -182,7 +172,7 @@ export default async function TodayPage() {
                 nativeButton={false}
                 render={<Link href="/habits" />}
               >
-                {dict.today.goToHabits}
+                Go to Habits
               </Button>
             }
           />
@@ -198,7 +188,7 @@ export default async function TodayPage() {
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">{dict.today.lifestyleSection}</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">Lifestyle</h2>
         <div className="grid gap-2 md:grid-cols-2">
           <NutritionCard profile={nutritionProfile} totals={nutritionTotals} />
           <WaterCard water={water} />

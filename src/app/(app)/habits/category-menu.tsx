@@ -29,24 +29,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { deleteCategoryAction, renameCategoryAction, type FormActionState } from "./actions";
 
 const initialState: FormActionState = { error: null };
 
-// Only this plain-string slice crosses the Server->Client boundary. The
-// caller interpolates the category name into `deleteTitle`'s template
-// before passing it down, since `dict.habits.categoryMenu` is server-only.
-type CategoryMenuDict = Dictionary["habits"]["categoryMenu"];
-
 export function CategoryMenu({
   categoryId,
   categoryName,
-  dict,
 }: {
   categoryId: string;
   categoryName: string;
-  dict: CategoryMenuDict;
 }) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -69,10 +61,10 @@ export function CategoryMenu({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setRenameOpen(true)}>
-            <Pencil className="size-4" /> {dict.rename}
+            <Pencil className="size-4" /> Rename
           </DropdownMenuItem>
           <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-            <Trash2 className="size-4" /> {dict.deleteCategory}
+            <Trash2 className="size-4" /> Delete category
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -80,12 +72,12 @@ export function CategoryMenu({
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>{dict.renameTitle}</DialogTitle>
-            <DialogDescription>{dict.renameDescription}</DialogDescription>
+            <DialogTitle>Rename category</DialogTitle>
+            <DialogDescription>This updates it everywhere it&apos;s shown.</DialogDescription>
           </DialogHeader>
           <form action={formAction} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor={`rename-${categoryId}`}>{dict.nameLabel}</Label>
+              <Label htmlFor={`rename-${categoryId}`}>Name</Label>
               <Input
                 id={`rename-${categoryId}`}
                 name="name"
@@ -102,7 +94,7 @@ export function CategoryMenu({
             ) : null}
             <DialogFooter>
               <Button type="submit" disabled={isPending}>
-                {isPending ? dict.saving : dict.save}
+                {isPending ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
           </form>
@@ -112,11 +104,13 @@ export function CategoryMenu({
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{dict.deleteTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{dict.deleteDescription}</AlertDialogDescription>
+            <AlertDialogTitle>Delete &quot;{categoryName}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Habits in this category aren&apos;t deleted — they move to Uncategorized. This can&apos;t be undone.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{dict.cancel}</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive-solid"
               onClick={() => {
@@ -124,7 +118,7 @@ export function CategoryMenu({
                 deleteCategoryAction(categoryId);
               }}
             >
-              {dict.delete}
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
