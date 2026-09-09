@@ -8,6 +8,8 @@ import { RingCluster, RingLegend } from "@/components/ring-cluster";
 import { StatTileRow } from "@/components/stat-tile";
 import { formatMinutes } from "@/lib/format";
 import { getTodaySummary } from "@/lib/services/today-service";
+import { listCategories } from "@/lib/services/habit-service";
+import { CategoryJump } from "@/app/(app)/habits/category-jump";
 import { getTodayWater } from "@/lib/services/water-service";
 import { getLatestSleep } from "@/lib/services/sleep-service";
 import { getCurrentFast, getLastCompletedFast } from "@/lib/services/fasting-service";
@@ -32,6 +34,8 @@ import { PhotosCard } from "./photos-card";
 import { NutritionCard } from "./nutrition-card";
 import { FootprintCard } from "./footprint-card";
 
+const UNCATEGORIZED_ID = "uncategorized";
+
 function greeting(hour: number, dict: Dictionary) {
   if (hour < 5) return dict.today.goodNight;
   if (hour < 12) return dict.today.goodMorning;
@@ -45,6 +49,7 @@ export default async function TodayPage() {
 
   const [
     summary,
+    categories,
     water,
     latestSleep,
     currentFast,
@@ -58,6 +63,7 @@ export default async function TodayPage() {
     footprint,
   ] = await Promise.all([
     getTodaySummary(),
+    listCategories(),
     getTodayWater(),
     getLatestSleep(),
     getCurrentFast(),
@@ -78,6 +84,24 @@ export default async function TodayPage() {
     day: "numeric",
   });
   const scorePct = summary.score != null ? Math.round(summary.score * 100) : null;
+
+  const dueCategoryGroups = categories
+    .map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      habits: summary.dueHabits.filter((h) => h.categoryId === cat.id),
+    }))
+    .filter((group) => group.habits.length > 0);
+  const uncategorizedDueHabits = summary.dueHabits.filter(
+    (h) => h.categoryId == null || !categories.some((c) => c.id === h.categoryId),
+  );
+  if (uncategorizedDueHabits.length > 0) {
+    dueCategoryGroups.push({
+      id: UNCATEGORIZED_ID,
+      name: dict.habits.uncategorized,
+      habits: uncategorizedDueHabits,
+    });
+  }
 
   const habitsPct = summary.totalCount > 0 ? summary.completedCount / summary.totalCount : 0;
   const waterPct = water.targetMl > 0 ? water.totalMl / water.targetMl : 0;
@@ -169,7 +193,13 @@ export default async function TodayPage() {
       />
 
       <div className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">{dict.today.habitsSection}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-medium text-muted-foreground">{dict.today.habitsSection}</h2>
+          <CategoryJump
+            categories={dueCategoryGroups.map((g) => ({ id: g.id, name: g.name }))}
+            placeholder={dict.habits.jumpToCategory}
+          />
+        </div>
         {summary.dueHabits.length === 0 ? (
           <EmptyState
             icon={ListChecks}
@@ -187,13 +217,22 @@ export default async function TodayPage() {
             }
           />
         ) : (
-          <Card>
-            <CardContent className="divide-y py-0">
-              {summary.dueHabits.map((habit) => (
-                <TodayHabitRow key={habit.id} habit={habit} />
-              ))}
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            {dueCategoryGroups.map((group) => (
+              <div key={group.id} id={`category-${group.id}`} className="space-y-1.5">
+                {dueCategoryGroups.length > 1 ? (
+                  <p className="px-1 text-xs font-medium text-muted-foreground">{group.name}</p>
+                ) : null}
+                <Card>
+                  <CardContent className="divide-y py-0">
+                    {group.habits.map((habit) => (
+                      <TodayHabitRow key={habit.id} habit={habit} />
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
