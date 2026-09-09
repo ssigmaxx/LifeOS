@@ -14,8 +14,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { NavUser } from "@/components/nav-user";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export function MobileNav({ userEmail }: { userEmail: string }) {
+export function MobileNav({ userEmail, dict }: { userEmail: string; dict: Dictionary }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const moreActive = moreNav.some((item) => pathname.startsWith(item.href));
@@ -37,7 +38,7 @@ export function MobileNav({ userEmail }: { userEmail: string }) {
             )}
           >
             <item.icon className="size-5" />
-            {item.label}
+            {dict.nav[item.labelKey]}
           </Link>
         );
       })}
@@ -55,11 +56,11 @@ export function MobileNav({ userEmail }: { userEmail: string }) {
           }
         >
           <Menu className="size-5" />
-          More
+          {dict.nav.more}
         </SheetTrigger>
         <SheetContent side="bottom" className="pb-8">
           <SheetHeader>
-            <SheetTitle>More</SheetTitle>
+            <SheetTitle>{dict.nav.more}</SheetTitle>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-3 px-4">
             {moreNav.map((item) => (
@@ -70,7 +71,7 @@ export function MobileNav({ userEmail }: { userEmail: string }) {
                 className="flex flex-col items-center gap-2 rounded-lg border p-4 text-sm font-medium hover:bg-accent"
               >
                 <item.icon className="size-5" />
-                {item.label}
+                {dict.nav[item.labelKey]}
               </Link>
             ))}
           </div>

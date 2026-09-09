@@ -3,26 +3,34 @@ import { Sparkles } from "lucide-react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { CommandPaletteProvider, CommandPaletteTrigger } from "@/components/command-palette";
+import type { Locale } from "@/lib/i18n/locale";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export function AppShell({
   children,
   userEmail,
+  locale,
+  dict,
 }: {
   children: ReactNode;
   userEmail: string;
+  locale: Locale;
+  dict: Dictionary;
 }) {
   return (
     <CommandPaletteProvider>
       <div className="flex min-h-svh w-full">
-        <AppSidebar userEmail={userEmail} />
+        <AppSidebar userEmail={userEmail} locale={locale} dict={dict} />
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex h-14 items-center justify-between gap-2 border-b px-4 md:hidden">
             <div className="flex items-center gap-2">
               <Sparkles className="size-5 text-primary" />
               <span className="font-semibold tracking-tight">LifeOS</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
+              <LanguageSwitcher locale={locale} className="h-8 w-auto gap-1 px-2 text-xs" />
               <CommandPaletteTrigger variant="icon" />
               <ThemeToggle />
             </div>
@@ -33,7 +41,7 @@ export function AppShell({
             </div>
           </main>
         </div>
-        <MobileNav userEmail={userEmail} />
+        <MobileNav userEmail={userEmail} dict={dict} />
       </div>
     </CommandPaletteProvider>
   );
