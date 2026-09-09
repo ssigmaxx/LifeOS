@@ -20,6 +20,7 @@ import { getTodayCarbonTotal } from "@/lib/services/carbon-service";
 import { getLocale } from "@/lib/i18n/get-locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionaries";
 import { intlTag } from "@/lib/i18n/locale";
+import { formatTemplate, pluralize } from "@/lib/i18n/format";
 import { TodayHabitRow } from "./today-habit-row";
 import { WaterCard } from "./water-card";
 import { SleepCard } from "./sleep-card";
@@ -114,7 +115,10 @@ export default async function TodayPage() {
               <p className="text-sm text-muted-foreground">{dict.today.todaysScore}</p>
               {summary.totalCount > 0 ? (
                 <p className="text-sm font-medium">
-                  {dict.today.habitsDone(summary.completedCount, summary.totalCount)}
+                  {formatTemplate(dict.today.habitsDone, {
+                    completed: summary.completedCount,
+                    total: summary.totalCount,
+                  })}
                 </p>
               ) : null}
               <Link href="/recap" className="text-xs text-muted-foreground hover:underline">
@@ -135,7 +139,7 @@ export default async function TodayPage() {
             label: dict.today.sleep,
             value: latestSleep ? formatMinutes(latestSleep.durationMinutes) : "—",
             hint: latestSleep?.quality != null
-              ? dict.today.quality(latestSleep.quality)
+              ? formatTemplate(dict.today.quality, { n: latestSleep.quality })
               : latestSleep
                 ? undefined
                 : dict.today.notLogged,
@@ -144,7 +148,10 @@ export default async function TodayPage() {
           {
             label: dict.today.meditation,
             value: formatMinutes(meditation.totalMinutes),
-            hint: meditation.sessionCount > 0 ? dict.today.sessions(meditation.sessionCount) : dict.today.notLogged,
+            hint:
+              meditation.sessionCount > 0
+                ? pluralize(meditation.sessionCount, dict.today.sessionOne, dict.today.sessionOther)
+                : dict.today.notLogged,
             tone: "neutral",
           },
           {

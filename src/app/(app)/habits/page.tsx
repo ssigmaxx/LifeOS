@@ -7,6 +7,7 @@ import { summarizeToday } from "@/lib/services/today-service";
 import { isLogComplete } from "@/lib/habit-completion";
 import { getLocale } from "@/lib/i18n/get-locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { formatTemplate, pluralize } from "@/lib/i18n/format";
 import { CategoryFormDialog } from "./category-form-dialog";
 import { CategoryJump } from "./category-jump";
 import { CategoryMenu } from "./category-menu";
@@ -119,7 +120,11 @@ export default async function HabitsPage() {
                           <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                             {dueCount > 0
                               ? `${doneCount}/${dueCount} ${dict.habits.todaySuffix}`
-                              : dict.habits.habitCount(group.habits.length)}
+                              : pluralize(
+                                  group.habits.length,
+                                  dict.habits.habitCountOne,
+                                  dict.habits.habitCountOther,
+                                )}
                           </span>
                         </summary>
                         {group.id !== UNCATEGORIZED_ID ? (
@@ -129,7 +134,9 @@ export default async function HabitsPage() {
                               categoryName={group.name}
                               dict={{
                                 ...dict.habits.categoryMenu,
-                                deleteTitle: dict.habits.categoryMenu.deleteTitle(group.name),
+                                deleteTitle: formatTemplate(dict.habits.categoryMenu.deleteTitle, {
+                                  name: group.name,
+                                }),
                               }}
                             />
                           </div>
