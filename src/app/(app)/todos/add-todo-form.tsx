@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createTodoAction, type FormActionState } from "./actions";
@@ -13,7 +14,10 @@ export function AddTodoForm() {
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (state !== initialState && !state.error) formRef.current?.reset();
+    if (state !== initialState && !state.error) {
+      formRef.current?.reset();
+      toast.success("Todo added.");
+    }
   }, [state]);
 
   return (

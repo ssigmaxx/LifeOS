@@ -15,8 +15,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { runAction } from "@/lib/toast-action";
 import type { Todo } from "@/lib/services/todo-service";
-import { deleteTodoAction, toggleTodoAction } from "./actions";
+import { deleteTodoAction, restoreTodoAction, toggleTodoAction } from "./actions";
 
 function formatDueDate(dateISO: string) {
   const date = new Date(`${dateISO}T00:00:00`);
@@ -71,7 +72,18 @@ export function TodoItem({ todo }: { todo: Todo }) {
               variant="destructive-solid"
               onClick={() => {
                 setDeleteOpen(false);
-                startTransition(() => deleteTodoAction(todo.id));
+                startTransition(() => {
+                  void runAction(deleteTodoAction(todo.id), {
+                    success: `"${todo.title}" deleted.`,
+                    error: "Failed to delete todo.",
+                    undo: {
+                      onClick: () =>
+                        void runAction(restoreTodoAction(todo.title, todo.dueDate), {
+                          error: "Failed to restore todo.",
+                        }),
+                    },
+                  });
+                });
               }}
             >
               Delete

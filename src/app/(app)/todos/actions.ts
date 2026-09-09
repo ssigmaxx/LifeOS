@@ -61,3 +61,13 @@ export async function deleteTodoAction(id: string) {
   revalidatePath("/today");
   revalidatePath("/calendar");
 }
+
+// Undo for deleteTodoAction — recreates the todo (new id, and it comes back
+// not-completed even if the deleted one was) from the fields the caller
+// captured before deleting.
+export async function restoreTodoAction(title: string, dueDate: string | null) {
+  await createTodo({ title, dueDate: dueDate ?? undefined });
+  revalidatePath("/todos");
+  revalidatePath("/today");
+  revalidatePath("/calendar");
+}

@@ -25,7 +25,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import type { Goal } from "@/lib/services/goal-service";
+import { runAction } from "@/lib/toast-action";
+import type { Goal, GoalStatus } from "@/lib/services/goal-service";
 import {
   addMilestoneAction,
   deleteGoalAction,
@@ -101,10 +102,28 @@ function MilestoneRow({ milestone }: { milestone: Goal["milestones"][number] }) 
   );
 }
 
+const STATUS_LABEL: Record<GoalStatus, string> = {
+  active: "reactivated",
+  completed: "marked complete",
+  abandoned: "abandoned",
+};
+
 export function GoalCard({ goal }: { goal: Goal }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const pct = Math.round(goal.progressRatio * 100);
+
+  function changeStatus(status: GoalStatus) {
+    const previousStatus = goal.status;
+    void runAction(setGoalStatusAction(goal.id, status), {
+      success: `"${goal.name}" ${STATUS_LABEL[status]}.`,
+      error: "Failed to update goal.",
+      undo: {
+        onClick: () =>
+          void runAction(setGoalStatusAction(goal.id, previousStatus), { error: "Failed to undo." }),
+      },
+    });
+  }
 
   return (
     <Card className={goal.status !== "active" ? "opacity-70" : undefined}>
@@ -130,15 +149,15 @@ export function GoalCard({ goal }: { goal: Goal }) {
               </DropdownMenuItem>
               {goal.status === "active" ? (
                 <>
-                  <DropdownMenuItem onClick={() => setGoalStatusAction(goal.id, "completed")}>
+                  <DropdownMenuItem onClick={() => changeStatus("completed")}>
                     <CheckCircle2 className="size-4" /> Mark complete
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setGoalStatusAction(goal.id, "abandoned")}>
+                  <DropdownMenuItem onClick={() => changeStatus("abandoned")}>
                     <XCircle className="size-4" /> Abandon
                   </DropdownMenuItem>
                 </>
               ) : (
-                <DropdownMenuItem onClick={() => setGoalStatusAction(goal.id, "active")}>
+                <DropdownMenuItem onClick={() => changeStatus("active")}>
                   <RotateCcw className="size-4" /> Reactivate
                 </DropdownMenuItem>
               )}
@@ -178,7 +197,10 @@ export function GoalCard({ goal }: { goal: Goal }) {
               variant="destructive-solid"
               onClick={() => {
                 setDeleteOpen(false);
-                deleteGoalAction(goal.id);
+                void runAction(deleteGoalAction(goal.id), {
+                  success: `"${goal.name}" deleted.`,
+                  error: "Failed to delete goal.",
+                });
               }}
             >
               Delete

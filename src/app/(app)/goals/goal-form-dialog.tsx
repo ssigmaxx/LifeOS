@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
+import { useActionState, useEffect, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,6 +42,11 @@ export function GoalFormDialog({
     setPrevState(state);
     if (state !== initialState && !state.error) setOpen(false);
   }
+
+  useEffect(() => {
+    if (state !== initialState && !state.error) toast.success(goal ? "Goal updated." : "Goal created.");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

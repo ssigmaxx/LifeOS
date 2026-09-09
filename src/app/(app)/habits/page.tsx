@@ -133,6 +133,7 @@ export default async function HabitsPage() {
                           <CategoryMenu
                             categoryId={group.id}
                             categoryName={group.name}
+                            habitIds={group.habits.map((h) => h.id)}
                             dict={{
                               ...dict.habits.categoryMenu,
                               deleteTitle: formatTemplate(dict.habits.categoryMenu.deleteTitle, {

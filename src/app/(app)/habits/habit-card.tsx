@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { Habit, HabitCategory } from "@/lib/services/habit-service";
+import { runAction } from "@/lib/toast-action";
 import {
   archiveHabitAction,
   deleteHabitAction,
@@ -70,15 +71,46 @@ export function HabitCard({
               <Pencil className="size-4" /> Edit
             </DropdownMenuItem>
             {habit.isActive ? (
-              <DropdownMenuItem onClick={() => pauseHabitAction(habit.id)}>
+              <DropdownMenuItem
+                onClick={() =>
+                  void runAction(pauseHabitAction(habit.id), {
+                    success: `"${habit.name}" paused.`,
+                    error: "Failed to pause habit.",
+                    undo: {
+                      label: "Resume",
+                      onClick: () =>
+                        void runAction(resumeHabitAction(habit.id), { error: "Failed to resume habit." }),
+                    },
+                  })
+                }
+              >
                 <Pause className="size-4" /> Pause
               </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onClick={() => resumeHabitAction(habit.id)}>
+              <DropdownMenuItem
+                onClick={() =>
+                  void runAction(resumeHabitAction(habit.id), {
+                    success: `"${habit.name}" resumed.`,
+                    error: "Failed to resume habit.",
+                  })
+                }
+              >
                 <Play className="size-4" /> Resume
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={() => archiveHabitAction(habit.id)}>
+            <DropdownMenuItem
+              onClick={() =>
+                void runAction(archiveHabitAction(habit.id), {
+                  success: `"${habit.name}" archived.`,
+                  error: "Failed to archive habit.",
+                  undo: {
+                    label: "Resume",
+                    onClick: () =>
+                      void runAction(resumeHabitAction(habit.id), { error: "Failed to resume habit." }),
+                  },
+                })
+              }
+            >
               <Archive className="size-4" /> Archive
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -104,7 +136,10 @@ export function HabitCard({
               variant="destructive-solid"
               onClick={() => {
                 setDeleteOpen(false);
-                deleteHabitAction(habit.id);
+                void runAction(deleteHabitAction(habit.id), {
+                  success: `"${habit.name}" deleted.`,
+                  error: "Failed to delete habit.",
+                });
               }}
             >
               Delete
