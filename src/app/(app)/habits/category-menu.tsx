@@ -35,12 +35,9 @@ import { deleteCategoryAction, renameCategoryAction, type FormActionState } from
 const initialState: FormActionState = { error: null };
 
 // Only this plain-string slice crosses the Server->Client boundary. The
-// source dictionary's `deleteTitle` is a function (it needs the category
-// name interpolated) — functions can't be passed as Client Component
-// props, so the caller resolves it to a plain string first.
-type CategoryMenuDict = Omit<Dictionary["habits"]["categoryMenu"], "deleteTitle"> & {
-  deleteTitle: string;
-};
+// caller interpolates the category name into `deleteTitle`'s template
+// before passing it down, since `dict.habits.categoryMenu` is server-only.
+type CategoryMenuDict = Dictionary["habits"]["categoryMenu"];
 
 export function CategoryMenu({
   categoryId,

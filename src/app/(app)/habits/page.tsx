@@ -7,6 +7,7 @@ import { summarizeToday } from "@/lib/services/today-service";
 import { isLogComplete } from "@/lib/habit-completion";
 import { getLocale } from "@/lib/i18n/get-locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { formatTemplate, pluralize } from "@/lib/i18n/format";
 import { CategoryFormDialog } from "./category-form-dialog";
 import { CategoryJump } from "./category-jump";
 import { CategoryMenu } from "./category-menu";
@@ -64,16 +65,22 @@ export default async function HabitsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">{dict.habits.title}</h1>
           <p className="text-sm text-muted-foreground">{dict.habits.subtitle}</p>
         </div>
-        <div className="flex gap-2">
-          <CategoryFormDialog dict={dict.habits.categoryDialog} />
-          <HabitFormDialog
-            categories={categories}
-            trigger={
-              <Button size="sm">
-                <Plus className="size-4" /> {dict.habits.habitButton}
-              </Button>
-            }
+        <div className="flex flex-wrap items-center gap-2">
+          <CategoryJump
+            categories={categoryGroups.map((g) => ({ id: g.id, name: g.name }))}
+            placeholder={dict.habits.jumpToCategory}
           />
+          <div className="flex gap-2">
+            <CategoryFormDialog dict={dict.habits.categoryDialog} />
+            <HabitFormDialog
+              categories={categories}
+              trigger={
+                <Button size="sm">
+                  <Plus className="size-4" /> {dict.habits.habitButton}
+                </Button>
+              }
+            />
+          </div>
         </div>
       </div>
 
@@ -93,62 +100,62 @@ export default async function HabitsPage() {
             {activeHabits.length === 0 ? (
               <p className="text-sm text-muted-foreground">{dict.habits.noActiveHabits}</p>
             ) : (
-              <>
-                <CategoryJump
-                  categories={categoryGroups.map((g) => ({ id: g.id, name: g.name }))}
-                  placeholder={dict.habits.jumpToCategory}
-                />
-                <div className="space-y-2">
-                  {categoryGroups.map((group) => {
-                    const { dueCount, doneCount } = groupCounts(group.habits);
-                    return (
-                      <details
-                        key={group.id}
-                        id={`category-${group.id}`}
-                        className="group relative rounded-xl border bg-card"
-                        open
+              <div className="space-y-2">
+                {categoryGroups.map((group) => {
+                  const { dueCount, doneCount } = groupCounts(group.habits);
+                  return (
+                    <details
+                      key={group.id}
+                      id={`category-${group.id}`}
+                      className="group relative rounded-xl border bg-card"
+                      open
+                    >
+                      <summary
+                        className={cn(
+                          "flex cursor-pointer list-none items-center gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden",
+                          group.id !== UNCATEGORIZED_ID && "pr-11",
+                        )}
                       >
-                        <summary
-                          className={cn(
-                            "flex cursor-pointer list-none items-center gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden",
-                            group.id !== UNCATEGORIZED_ID && "pr-11",
-                          )}
-                        >
-                          <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
-                          <span className="font-medium">{group.name}</span>
-                          <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                            {dueCount > 0
-                              ? `${doneCount}/${dueCount} ${dict.habits.todaySuffix}`
-                              : dict.habits.habitCount(group.habits.length)}
-                          </span>
-                        </summary>
-                        {group.id !== UNCATEGORIZED_ID ? (
-                          <div className="absolute top-1.5 right-2">
-                            <CategoryMenu
-                              categoryId={group.id}
-                              categoryName={group.name}
-                              dict={{
-                                ...dict.habits.categoryMenu,
-                                deleteTitle: dict.habits.categoryMenu.deleteTitle(group.name),
-                              }}
-                            />
-                          </div>
-                        ) : null}
-                        <div className="space-y-2 border-t px-3 pt-2 pb-3">
-                          {group.habits.map((habit) => (
-                            <HabitCard
-                              key={habit.id}
-                              habit={habit}
-                              categories={categories}
-                              todayLog={todayLogs[habit.id]}
-                            />
-                          ))}
+                        <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
+                        <span className="font-medium">{group.name}</span>
+                        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                          {dueCount > 0
+                            ? `${doneCount}/${dueCount} ${dict.habits.todaySuffix}`
+                            : pluralize(
+                                group.habits.length,
+                                dict.habits.habitCountOne,
+                                dict.habits.habitCountOther,
+                              )}
+                        </span>
+                      </summary>
+                      {group.id !== UNCATEGORIZED_ID ? (
+                        <div className="absolute top-1.5 right-2">
+                          <CategoryMenu
+                            categoryId={group.id}
+                            categoryName={group.name}
+                            dict={{
+                              ...dict.habits.categoryMenu,
+                              deleteTitle: formatTemplate(dict.habits.categoryMenu.deleteTitle, {
+                                name: group.name,
+                              }),
+                            }}
+                          />
                         </div>
-                      </details>
-                    );
-                  })}
-                </div>
-              </>
+                      ) : null}
+                      <div className="space-y-2 border-t px-3 pt-2 pb-3">
+                        {group.habits.map((habit) => (
+                          <HabitCard
+                            key={habit.id}
+                            habit={habit}
+                            categories={categories}
+                            todayLog={todayLogs[habit.id]}
+                          />
+                        ))}
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
             )}
           </div>
 
