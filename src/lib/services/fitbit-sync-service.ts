@@ -116,17 +116,28 @@ async function syncOneConnection(row: FitbitConnectionRow) {
   const end = new Date();
   const start = new Date(end.getTime() - SYNC_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
-  const [stepsRollup, heartRateRollup, sleepPoints] = await Promise.all([
+  const [stepsRollup, heartRateRollup, caloriesRollup, sleepPoints] = await Promise.all([
     fetchDailyRollup(accessToken, "steps", start, end),
     fetchDailyRollup(accessToken, "heart-rate", start, end),
+    fetchDailyRollup(accessToken, "total-calories", start, end),
     fetchSleepList(accessToken),
   ]);
 
-  const byDate = new Map<string, { steps: number | null; heartRate: number | null; sleepMinutes: number | null; raw: Record<string, unknown> }>();
+  const byDate = new Map<
+    string,
+    {
+      steps: number | null;
+      restingHeartRate: number | null;
+      avgHeartRate: number | null;
+      caloriesBurned: number | null;
+      sleepMinutes: number | null;
+      raw: Record<string, unknown>;
+    }
+  >();
   function entryFor(date: string) {
     let entry = byDate.get(date);
     if (!entry) {
-      entry = { steps: null, heartRate: null, sleepMinutes: null, raw: {} };
+      entry = { steps: null, restingHeartRate: null, avgHeartRate: null, caloriesBurned: null, sleepMinutes: null, raw: {} };
       byDate.set(date, entry);
     }
     return entry;
@@ -150,9 +161,24 @@ async function syncOneConnection(row: FitbitConnectionRow) {
     // fitness apps label "resting heart rate" (the Google Health app showed
     // noticeably lower numbers) — the daily minimum, mostly recorded during
     // sleep, is a much closer match to that concept than an all-day average.
+    // Both are stored: resting (min) alongside the day's overall average.
     const minBpm = pickNumber(record.heartRate, ["beatsPerMinuteMin"]);
-    entry.heartRate = minBpm != null ? Math.round(minBpm) : null;
+    const avgBpm = pickNumber(record.heartRate, ["beatsPerMinuteAvg"]);
+    entry.restingHeartRate = minBpm != null ? Math.round(minBpm) : null;
+    entry.avgHeartRate = avgBpm != null ? Math.round(avgBpm) : null;
     entry.raw.heartRate = point;
+  }
+
+  for (const point of caloriesRollup) {
+    const date = rollupEntryDate(point);
+    if (!date) continue;
+    const record = point as Record<string, unknown>;
+    const entry = entryFor(date);
+    // Confirmed field name: totalCalories.kcalSum (same naming pattern as
+    // steps.countSum) — total-calories is basal + active energy combined.
+    const kcal = pickNumber(record.totalCalories, ["kcalSum"]);
+    entry.caloriesBurned = kcal != null ? Math.round(kcal) : null;
+    entry.raw.calories = point;
   }
 
   // fetchSleepList returns recent sessions unfiltered (see its comment) —
@@ -193,7 +219,9 @@ async function syncOneConnection(row: FitbitConnectionRow) {
     user_id: row.user_id,
     date,
     steps: entry.steps,
-    resting_heart_rate: entry.heartRate,
+    resting_heart_rate: entry.restingHeartRate,
+    avg_heart_rate: entry.avgHeartRate,
+    calories_burned: entry.caloriesBurned,
     sleep_minutes: entry.sleepMinutes,
     raw: entry.raw,
     synced_at: new Date().toISOString(),

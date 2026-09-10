@@ -23,6 +23,9 @@ import { getLocale } from "@/lib/i18n/get-locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionaries";
 import { intlTag } from "@/lib/i18n/locale";
 import { formatTemplate, pluralize } from "@/lib/i18n/format";
+import { summarizeHealthMetrics } from "@/lib/health-summary";
+import { isFitbitConnected } from "@/lib/services/fitbit-service";
+import { getRecentHealthMetrics } from "@/lib/services/health-service";
 import { TodayHabitRow } from "./today-habit-row";
 import { WaterCard } from "./water-card";
 import { SleepCard } from "./sleep-card";
@@ -33,6 +36,7 @@ import { JournalCard } from "./journal-card";
 import { PhotosCard } from "./photos-card";
 import { NutritionCard } from "./nutrition-card";
 import { FootprintCard } from "./footprint-card";
+import { HealthSummaryCard } from "../health/health-summary-card";
 
 const UNCATEGORIZED_ID = "uncategorized";
 
@@ -61,6 +65,8 @@ export default async function TodayPage() {
     nutritionProfile,
     nutritionTotals,
     footprint,
+    fitbitConnected,
+    healthMetrics,
   ] = await Promise.all([
     getTodaySummary(),
     listCategories(),
@@ -75,7 +81,14 @@ export default async function TodayPage() {
     getNutritionProfile(),
     getDailyTotals(),
     getTodayCarbonTotal(),
+    isFitbitConnected().catch(() => false),
+    getRecentHealthMetrics(30).catch(() => []),
   ]);
+  const healthSummary = fitbitConnected ? summarizeHealthMetrics(healthMetrics) : null;
+  const autoSyncedSleepMinutes = healthSummary?.latestSleep?.sleepMinutes ?? null;
+  // The synced value wins when present — same "don't make me type this in"
+  // reasoning as the SleepCard below.
+  const displaySleepMinutes = autoSyncedSleepMinutes ?? latestSleep?.durationMinutes ?? null;
 
   const today = new Date();
   const dateLabel = today.toLocaleDateString(intlTag(locale), {
@@ -157,16 +170,20 @@ export default async function TodayPage() {
         </CardContent>
       </Card>
 
+      {healthSummary ? <HealthSummaryCard summary={healthSummary} /> : null}
+
       <StatTileRow
         tiles={[
           {
             label: dict.today.sleep,
-            value: latestSleep ? formatMinutes(latestSleep.durationMinutes) : "—",
-            hint: latestSleep?.quality != null
-              ? formatTemplate(dict.today.quality, { n: latestSleep.quality })
-              : latestSleep
-                ? undefined
-                : dict.today.notLogged,
+            value: displaySleepMinutes != null ? formatMinutes(displaySleepMinutes) : "—",
+            hint: autoSyncedSleepMinutes != null
+              ? "Synced"
+              : latestSleep?.quality != null
+                ? formatTemplate(dict.today.quality, { n: latestSleep.quality })
+                : latestSleep
+                  ? undefined
+                  : dict.today.notLogged,
             tone: "neutral",
           },
           {
@@ -241,7 +258,7 @@ export default async function TodayPage() {
         <div className="grid gap-2 md:grid-cols-2">
           <NutritionCard profile={nutritionProfile} totals={nutritionTotals} />
           <WaterCard water={water} />
-          <SleepCard latest={latestSleep} />
+          <SleepCard latest={latestSleep} autoSyncedMinutes={autoSyncedSleepMinutes} />
           <FastingCard current={currentFast} lastCompleted={lastFast} />
           <MeditationCard meditation={meditation} />
           <WorkoutCard workout={workout} />

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Footprints, HeartPulse, Moon } from "lucide-react";
+import { ArrowRight, Footprints, HeartPulse, Moon, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatMinutes } from "@/lib/format";
 import type { HealthSummary } from "@/lib/health-summary";
@@ -8,6 +8,7 @@ const STAT_COLOR = {
   steps: "var(--health-steps)",
   heart: "var(--health-heart)",
   sleep: "var(--health-sleep)",
+  calories: "var(--health-calories)",
 } as const;
 
 function MiniStat({
@@ -37,12 +38,23 @@ function MiniStat({
   );
 }
 
-export function HealthSummaryCard({ summary }: { summary: HealthSummary }) {
-  const { latestSteps, latestHeartRate, latestSleep, readinessScore } = summary;
-  if (latestSteps == null && latestHeartRate == null && latestSleep == null) return null;
+// Shared by the Dashboard and Today — same numbers, same math
+// (lib/health-summary.ts), so "today's resting HR" never disagrees
+// between screens.
+export function HealthSummaryCard({ summary, linkHref = "/health" }: { summary: HealthSummary; linkHref?: string }) {
+  const { latestSteps, latestHeartRate, latestAvgHeartRate, latestCalories, latestSleep, readinessScore } = summary;
+  if (
+    latestSteps == null &&
+    latestHeartRate == null &&
+    latestAvgHeartRate == null &&
+    latestCalories == null &&
+    latestSleep == null
+  ) {
+    return null;
+  }
 
   return (
-    <Link href="/health" className="block">
+    <Link href={linkHref} className="block">
       <Card className="transition-shadow hover:shadow-md">
         <CardContent className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-4">
@@ -67,10 +79,22 @@ export function HealthSummaryCard({ summary }: { summary: HealthSummary }) {
               hint="Resting HR"
             />
             <MiniStat
+              icon={HeartPulse}
+              color={STAT_COLOR.heart}
+              value={latestAvgHeartRate?.avgHeartRate != null ? `${latestAvgHeartRate.avgHeartRate} bpm` : "—"}
+              hint="Avg HR"
+            />
+            <MiniStat
               icon={Moon}
               color={STAT_COLOR.sleep}
               value={latestSleep?.sleepMinutes != null ? formatMinutes(latestSleep.sleepMinutes) : "—"}
               hint="Sleep"
+            />
+            <MiniStat
+              icon={Zap}
+              color={STAT_COLOR.calories}
+              value={latestCalories?.caloriesBurned != null ? `${latestCalories.caloriesBurned.toLocaleString()} kcal` : "—"}
+              hint="Calories"
             />
           </div>
           <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
