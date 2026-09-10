@@ -1,32 +1,35 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Activity, Flame, Footprints, HeartPulse, Moon } from "lucide-react";
+import { Activity, BatteryCharging, Flame, Footprints, HeartPulse, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
 import { RingCluster, RingLegend } from "@/components/ring-cluster";
 import { cn } from "@/lib/utils";
 import { formatMinutes } from "@/lib/format";
+import { STEPS_TARGET, summarizeHealthMetrics } from "@/lib/health-summary";
 import { isFitbitConnected } from "@/lib/services/fitbit-service";
 import { getRecentHealthMetrics } from "@/lib/services/health-service";
 import { SyncNowButton } from "./sync-now-button";
 import { TrendChart } from "./trend-chart";
 
 const DAYS = 30;
-const STEPS_TARGET = 10000;
-const SLEEP_TARGET_MINUTES = 480; // 8h
 
 const RING_COLORS = ["var(--health-steps)", "var(--health-sleep)"];
 
 // Bold, fully-colored pill — steps/heart-rate/sleep read at a glance by
 // color the same way a fitness watch face groups its daily rings, rather
-// than a small colored icon on an otherwise neutral card.
+// than a small colored icon on an otherwise neutral card. `progress`
+// (0-1) renders a thin bar under the value so a pill reads as "how much
+// of my goal" rather than just a bare number.
 function HealthStatPill({
   icon: Icon,
   color,
   textClassName,
   label,
   value,
+  subtitle,
+  progress,
   hint,
 }: {
   icon: LucideIcon;
@@ -34,6 +37,8 @@ function HealthStatPill({
   textClassName: string;
   label: string;
   value: string;
+  subtitle?: string;
+  progress?: number;
   hint?: string;
 }) {
   return (
@@ -47,8 +52,17 @@ function HealthStatPill({
       <div className="min-w-0 flex-1">
         <p className="text-xs opacity-80">{label}</p>
         <p className="truncate text-xl font-bold tracking-tight tabular-nums">{value}</p>
+        {subtitle ? <p className="mt-0.5 truncate text-xs opacity-80">{subtitle}</p> : null}
+        {progress != null ? (
+          <div className="mt-1.5 h-1.5 w-full max-w-40 overflow-hidden rounded-full bg-black/15">
+            <div
+              className="h-full rounded-full bg-white/90"
+              style={{ width: `${Math.round(Math.min(Math.max(progress, 0), 1) * 100)}%` }}
+            />
+          </div>
+        ) : null}
       </div>
-      {hint ? <p className="shrink-0 text-xs opacity-70 tabular-nums">{hint.slice(5)}</p> : null}
+      {hint ? <p className="shrink-0 self-start text-xs opacity-70 tabular-nums">{hint.slice(5)}</p> : null}
     </div>
   );
 }
@@ -78,20 +92,30 @@ export default async function HealthPage() {
 
   const metrics = await getRecentHealthMetrics(DAYS).catch(() => []);
   // Google's daily rollup only ever covers completed civil days — "today"
-  // has no data until it's over, so this picks the most recent day that
-  // actually has each metric rather than mislabeling yesterday's number
-  // as today's.
-  const latestSteps = metrics.find((m) => m.steps != null);
-  const latestHeartRate = metrics.find((m) => m.restingHeartRate != null);
-  const latestSleep = metrics.find((m) => m.sleepMinutes != null);
+  // has no data until it's over, so summarizeHealthMetrics picks the most
+  // recent day that actually has each metric rather than mislabeling
+  // yesterday's number as today's.
+  const {
+    latestSteps,
+    latestHeartRate,
+    latestSleep,
+    stepsPct,
+    sleepPct,
+    stepsRemaining,
+    sleepDeficitMinutes,
+    hrDelta,
+    readinessScore,
+  } = summarizeHealthMetrics(metrics);
   // Charts want oldest-first for a left-to-right timeline.
   const chronological = [...metrics].reverse();
   const stepsPoints = chronological.map((m) => ({ date: m.date, value: m.steps }));
   const sleepPoints = chronological.map((m) => ({ date: m.date, value: m.sleepMinutes }));
   const heartRatePoints = chronological.map((m) => ({ date: m.date, value: m.restingHeartRate }));
 
-  const stepsPct = latestSteps?.steps != null ? Math.min(latestSteps.steps / STEPS_TARGET, 1) : 0;
-  const sleepPct = latestSleep?.sleepMinutes != null ? Math.min(latestSleep.sleepMinutes / SLEEP_TARGET_MINUTES, 1) : 0;
+  const stepsSubtitle = latestSteps?.steps != null ? (stepsRemaining > 0 ? `${stepsRemaining.toLocaleString()} to go` : "Goal reached!") : undefined;
+  const sleepSubtitle = latestSleep?.sleepMinutes != null ? (sleepDeficitMinutes > 0 ? `${formatMinutes(sleepDeficitMinutes)} short of your goal` : "Goal reached!") : undefined;
+  const heartRateSubtitle =
+    hrDelta != null ? (hrDelta === 0 ? "Same as your recent average" : `${hrDelta > 0 ? "+" : ""}${hrDelta} bpm vs your recent average`) : undefined;
 
   return (
     <div className="flex flex-col gap-6">
@@ -148,13 +172,23 @@ export default async function HealthPage() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-rows-3">
+        <div className="grid grid-cols-1 gap-3">
+          <HealthStatPill
+            icon={BatteryCharging}
+            color="var(--health-readiness)"
+            textClassName="text-white"
+            label="Readiness (estimated)"
+            value={readinessScore != null ? `${readinessScore}` : "—"}
+            subtitle="From last night's sleep + today's resting HR vs. your recent average"
+          />
           <HealthStatPill
             icon={Footprints}
             color="var(--health-steps)"
             textClassName="text-white"
             label="Steps"
             value={latestSteps ? latestSteps.steps!.toLocaleString() : "—"}
+            subtitle={stepsSubtitle}
+            progress={latestSteps ? stepsPct : undefined}
             hint={latestSteps?.date}
           />
           <HealthStatPill
@@ -163,6 +197,7 @@ export default async function HealthPage() {
             textClassName="text-amber-950"
             label="Resting heart rate"
             value={latestHeartRate ? `${latestHeartRate.restingHeartRate} bpm` : "—"}
+            subtitle={heartRateSubtitle}
             hint={latestHeartRate?.date}
           />
           <HealthStatPill
@@ -171,6 +206,8 @@ export default async function HealthPage() {
             textClassName="text-white"
             label="Sleep"
             value={latestSleep ? formatMinutes(latestSleep.sleepMinutes!) : "—"}
+            subtitle={sleepSubtitle}
+            progress={latestSleep ? sleepPct : undefined}
             hint={latestSleep?.date}
           />
         </div>
