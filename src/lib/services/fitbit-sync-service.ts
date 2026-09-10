@@ -65,9 +65,8 @@ async function fetchSleepList(accessToken: string) {
   return json.dataPoints ?? [];
 }
 
-// Confirmed against a real synced response (see the debug card on the
-// Health page): steps.countSum and heartRate.beatsPerMinuteAvg are the
-// actual leaf fields — neither was in the original guess list.
+// Confirmed against a real synced response: steps.countSum and
+// heartRate.beatsPerMinuteMin/Avg/Max are the actual leaf fields.
 function pickNumber(obj: unknown, keys: string[]): number | null {
   if (!obj || typeof obj !== "object") return null;
   const record = obj as Record<string, unknown>;
@@ -147,8 +146,12 @@ async function syncOneConnection(row: FitbitConnectionRow) {
     if (!date) continue;
     const record = point as Record<string, unknown>;
     const entry = entryFor(date);
-    const avgBpm = pickNumber(record.heartRate, ["beatsPerMinuteAvg"]);
-    entry.heartRate = avgBpm != null ? Math.round(avgBpm) : null;
+    // The whole-day average (beatsPerMinuteAvg) reads much higher than what
+    // fitness apps label "resting heart rate" (the Google Health app showed
+    // noticeably lower numbers) — the daily minimum, mostly recorded during
+    // sleep, is a much closer match to that concept than an all-day average.
+    const minBpm = pickNumber(record.heartRate, ["beatsPerMinuteMin"]);
+    entry.heartRate = minBpm != null ? Math.round(minBpm) : null;
     entry.raw.heartRate = point;
   }
 
