@@ -110,7 +110,7 @@ export function ExportDialog() {
             <Label htmlFor="export-format">Format</Label>
             <Select value={format} onValueChange={(v) => setFormat(v as "json" | "csv")}>
               <SelectTrigger id="export-format" className="w-full">
-                <SelectValue />
+                <SelectValue>{(value: "json" | "csv") => (value === "json" ? "JSON" : "CSV")}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="json">JSON</SelectItem>

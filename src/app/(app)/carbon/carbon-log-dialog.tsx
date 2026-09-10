@@ -57,7 +57,7 @@ function TravelForm({ onLogged }: { onLogged: () => void }) {
         <Label htmlFor="mode">Mode</Label>
         <Select value={mode} onValueChange={(v) => setMode(v as TravelModeOption)}>
           <SelectTrigger id="mode" className="w-full">
-            <SelectValue />
+            <SelectValue>{(value: TravelModeOption) => TRAVEL_MODE_LABELS[value]}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {(Object.keys(TRAVEL_MODE_LABELS) as TravelModeOption[]).map((m) => (
@@ -100,7 +100,7 @@ function EnergyForm({ onLogged }: { onLogged: () => void }) {
         <Label htmlFor="kind">Type</Label>
         <Select value={kind} onValueChange={(v) => setKind(v as EnergyKind)}>
           <SelectTrigger id="kind" className="w-full">
-            <SelectValue />
+            <SelectValue>{(value: EnergyKind) => ENERGY_KIND_LABELS[value]}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {(Object.keys(ENERGY_KIND_LABELS) as EnergyKind[]).map((k) => (
@@ -151,7 +151,7 @@ function PurchaseForm({ onLogged }: { onLogged: () => void }) {
         <Label htmlFor="category">Category</Label>
         <Select value={category} onValueChange={(v) => setCategory(v as PurchaseCategoryOption)}>
           <SelectTrigger id="category" className="w-full">
-            <SelectValue />
+            <SelectValue>{(value: PurchaseCategoryOption) => PURCHASE_CATEGORY_LABELS[value]}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {(Object.keys(PURCHASE_CATEGORY_LABELS) as PurchaseCategoryOption[]).map((c) => (
@@ -171,7 +171,7 @@ function PurchaseForm({ onLogged }: { onLogged: () => void }) {
           <Label htmlFor="purchaseMode">Where</Label>
           <Select value={purchaseMode} onValueChange={(v) => setPurchaseMode(v as PurchaseMode)}>
             <SelectTrigger id="purchaseMode" className="w-full">
-              <SelectValue />
+              <SelectValue>{(value: PurchaseMode) => PURCHASE_MODE_LABELS[value]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {(Object.keys(PURCHASE_MODE_LABELS) as PurchaseMode[]).map((m) => (
@@ -186,7 +186,7 @@ function PurchaseForm({ onLogged }: { onLogged: () => void }) {
           <Label htmlFor="condition">Condition</Label>
           <Select value={condition} onValueChange={(v) => setCondition(v as PurchaseCondition)}>
             <SelectTrigger id="condition" className="w-full">
-              <SelectValue />
+              <SelectValue>{(value: PurchaseCondition) => PURCHASE_CONDITION_LABELS[value]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {(Object.keys(PURCHASE_CONDITION_LABELS) as PurchaseCondition[]).map((c) => (

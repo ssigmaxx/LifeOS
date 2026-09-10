@@ -107,7 +107,7 @@ function CalendarRow({ calendar, others }: { calendar: Calendar; others: Calenda
         <>
           <Select value={targetId} onValueChange={(v) => setTargetId(v ?? "")}>
             <SelectTrigger size="sm" className="w-28">
-              <SelectValue />
+              <SelectValue>{(value: string) => others.find((c) => c.id === value)?.name ?? ""}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {others.map((c) => (
