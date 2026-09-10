@@ -84,9 +84,17 @@ export function RingCluster({
   );
 }
 
-export function RingLegend({ rings, colors = RING_COLORS }: { rings: RingData[]; colors?: string[] }) {
+export function RingLegend({
+  rings,
+  colors = RING_COLORS,
+  className,
+}: {
+  rings: RingData[];
+  colors?: string[];
+  className?: string;
+}) {
   return (
-    <div className="flex flex-col gap-2 text-sm">
+    <div className={cn("flex flex-col gap-2 text-sm", className)}>
       {rings.map((ring, i) => (
         <div key={ring.label} className="flex items-center gap-2">
           <span className="size-1.5 shrink-0 rounded-full" style={{ background: colors[i % colors.length] }} />

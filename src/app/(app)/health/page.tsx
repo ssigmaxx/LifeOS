@@ -1,9 +1,11 @@
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import { Activity, Flame, Footprints, HeartPulse, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
 import { RingCluster, RingLegend } from "@/components/ring-cluster";
+import { cn } from "@/lib/utils";
 import { formatMinutes } from "@/lib/format";
 import { isFitbitConnected } from "@/lib/services/fitbit-service";
 import { getRecentHealthMetrics } from "@/lib/services/health-service";
@@ -16,6 +18,41 @@ const STEPS_TARGET = 10000;
 const SLEEP_TARGET_MINUTES = 480; // 8h
 
 const RING_COLORS = ["var(--health-steps)", "var(--health-sleep)"];
+
+// Bold, fully-colored pill — steps/heart-rate/sleep read at a glance by
+// color the same way a fitness watch face groups its daily rings, rather
+// than a small colored icon on an otherwise neutral card.
+function HealthStatPill({
+  icon: Icon,
+  color,
+  textClassName,
+  label,
+  value,
+  hint,
+}: {
+  icon: LucideIcon;
+  color: string;
+  textClassName: string;
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div
+      className={cn("flex items-center gap-3 rounded-2xl px-4 py-3.5", textClassName)}
+      style={{ background: color }}
+    >
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/25">
+        <Icon className="size-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs opacity-80">{label}</p>
+        <p className="truncate text-xl font-bold tracking-tight tabular-nums">{value}</p>
+      </div>
+      {hint ? <p className="shrink-0 text-xs opacity-70 tabular-nums">{hint.slice(5)}</p> : null}
+    </div>
+  );
+}
 
 export default async function HealthPage() {
   const connected = await isFitbitConnected().catch(() => false);
@@ -67,12 +104,13 @@ export default async function HealthPage() {
         <SyncNowButton />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-[auto_1fr]">
-        <Card>
-          <CardContent className="flex flex-col items-center gap-4 py-6 sm:flex-row sm:items-center">
+      <div className="grid gap-4 md:grid-cols-[auto_1fr] md:items-stretch">
+        <Card className="border-none bg-[linear-gradient(160deg,color-mix(in_oklab,var(--health-steps)_10%,var(--card)),var(--card))]">
+          <CardContent className="flex h-full flex-col items-center justify-center gap-2 py-8">
             <RingCluster
-              size={128}
-              strokeWidth={11}
+              size={168}
+              strokeWidth={14}
+              gap={5}
               colors={RING_COLORS}
               rings={[
                 { label: "Steps", value: stepsPct, valueLabel: latestSteps ? latestSteps.steps!.toLocaleString() : "—" },
@@ -82,13 +120,13 @@ export default async function HealthPage() {
                   valueLabel: latestSleep ? formatMinutes(latestSleep.sleepMinutes!) : "—",
                 },
               ]}
-              centerValue={
-                <span className="flex items-center gap-1 text-[color:var(--health-steps)]">
-                  <Flame className="size-4" />
-                  {Math.round(stepsPct * 100)}%
+              centerValue={<span className="text-3xl font-bold tracking-tight">{Math.round(stepsPct * 100)}%</span>}
+              centerLabel={
+                <span className="flex items-center gap-1">
+                  <Flame className="size-3" />
+                  {latestSteps ? latestSteps.steps!.toLocaleString() : "—"} of {STEPS_TARGET.toLocaleString()}
                 </span>
               }
-              centerLabel={`of ${STEPS_TARGET.toLocaleString()} steps`}
             />
             <RingLegend
               colors={RING_COLORS}
@@ -96,63 +134,44 @@ export default async function HealthPage() {
                 {
                   label: "Steps",
                   value: stepsPct,
-                  valueLabel: `${latestSteps ? latestSteps.steps!.toLocaleString() : "—"} / ${STEPS_TARGET.toLocaleString()}`,
+                  valueLabel: latestSteps ? latestSteps.steps!.toLocaleString() : "—",
                 },
                 {
                   label: "Sleep",
                   value: sleepPct,
-                  valueLabel: `${latestSleep ? formatMinutes(latestSleep.sleepMinutes!) : "—"} / ${formatMinutes(SLEEP_TARGET_MINUTES)}`,
+                  valueLabel: latestSleep ? formatMinutes(latestSleep.sleepMinutes!) : "—",
                 },
               ]}
+              className="mt-2 w-full max-w-40"
             />
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Card className="border-[color-mix(in_oklab,var(--health-steps)_35%,var(--border))]">
-            <CardContent className="flex items-center gap-3 py-5">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--health-steps)_15%,var(--card))] text-[color:var(--health-steps)]">
-                <Footprints className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Steps</p>
-                <p className="truncate text-xl font-bold tracking-tight tabular-nums">
-                  {latestSteps ? latestSteps.steps!.toLocaleString() : "—"}
-                </p>
-                {latestSteps ? <p className="text-xs text-muted-foreground">{latestSteps.date}</p> : null}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-[color-mix(in_oklab,var(--health-heart)_35%,var(--border))]">
-            <CardContent className="flex items-center gap-3 py-5">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--health-heart)_15%,var(--card))] text-[color:var(--health-heart)]">
-                <HeartPulse className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Resting heart rate</p>
-                <p className="truncate text-xl font-bold tracking-tight tabular-nums">
-                  {latestHeartRate ? `${latestHeartRate.restingHeartRate} bpm` : "—"}
-                </p>
-                {latestHeartRate ? <p className="text-xs text-muted-foreground">{latestHeartRate.date}</p> : null}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-[color-mix(in_oklab,var(--health-sleep)_35%,var(--border))] sm:col-span-2">
-            <CardContent className="flex items-center gap-3 py-5">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--health-sleep)_15%,var(--card))] text-[color:var(--health-sleep)]">
-                <Moon className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Sleep</p>
-                <p className="truncate text-xl font-bold tracking-tight tabular-nums">
-                  {latestSleep ? formatMinutes(latestSleep.sleepMinutes!) : "—"}
-                </p>
-                {latestSleep ? <p className="text-xs text-muted-foreground">{latestSleep.date}</p> : null}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 gap-3 sm:grid-rows-3">
+          <HealthStatPill
+            icon={Footprints}
+            color="var(--health-steps)"
+            textClassName="text-white"
+            label="Steps"
+            value={latestSteps ? latestSteps.steps!.toLocaleString() : "—"}
+            hint={latestSteps?.date}
+          />
+          <HealthStatPill
+            icon={HeartPulse}
+            color="var(--health-heart)"
+            textClassName="text-amber-950"
+            label="Resting heart rate"
+            value={latestHeartRate ? `${latestHeartRate.restingHeartRate} bpm` : "—"}
+            hint={latestHeartRate?.date}
+          />
+          <HealthStatPill
+            icon={Moon}
+            color="var(--health-sleep)"
+            textClassName="text-white"
+            label="Sleep"
+            value={latestSleep ? formatMinutes(latestSleep.sleepMinutes!) : "—"}
+            hint={latestSleep?.date}
+          />
         </div>
       </div>
 
