@@ -3,15 +3,22 @@ import { getNotificationPreferences } from "@/lib/services/notification-service"
 import { isCycleTrackingEnabled } from "@/lib/services/cycle-service";
 import { getProfile } from "@/lib/services/profile-service";
 import { isLockEnabled } from "@/lib/services/lock-service";
+import { isFitbitConnected } from "@/lib/services/fitbit-service";
 import { NotificationSettingsForm } from "./notification-settings-form";
 import { CycleTrackingToggle } from "./cycle-tracking-toggle";
 import { ProfileForm } from "./profile-form";
 import { PasswordForm } from "./password-form";
 import { LockSettingsForm } from "./lock-settings-form";
+import { FitbitSettingsForm } from "./fitbit-settings-form";
 import { ReplayTourButton } from "./replay-tour-button";
 
-export default async function SettingsPage() {
-  const [preferences, cycleTrackingEnabled, profile, lockEnabled] = await Promise.all([
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ fitbit?: string }>;
+}) {
+  const { fitbit: fitbitStatus } = await searchParams;
+  const [preferences, cycleTrackingEnabled, profile, lockEnabled, fitbitConnected] = await Promise.all([
     getNotificationPreferences(),
     isCycleTrackingEnabled(),
     // Same fallback as (app)/layout.tsx's getProfile() call, for the same
@@ -26,6 +33,7 @@ export default async function SettingsPage() {
       email: "",
     })),
     isLockEnabled().catch(() => false),
+    isFitbitConnected().catch(() => false),
   ]);
 
   return (
@@ -47,6 +55,7 @@ export default async function SettingsPage() {
           already-mounted instance — this forces a remount instead. */}
       <CycleTrackingToggle key={String(cycleTrackingEnabled)} initialEnabled={cycleTrackingEnabled} />
       <LockSettingsForm key={String(lockEnabled)} initialEnabled={lockEnabled} />
+      <FitbitSettingsForm connected={fitbitConnected} status={fitbitStatus} />
 
       <Card>
         <CardHeader>

@@ -14,6 +14,7 @@ import { updateProfile, type ProfileUpdate } from "@/lib/services/profile-servic
 import { profileFormSchema } from "@/lib/validations/profile";
 import { updatePasswordSchema } from "@/lib/validations/auth";
 import { createClient } from "@/lib/supabase/server";
+import { disconnectFitbit } from "@/lib/services/fitbit-service";
 
 export type ActionResult = { error: string | null };
 
@@ -112,5 +113,15 @@ export async function updateOwnPasswordAction(values: {
   if (error) {
     return { error: error.message };
   }
+  return { error: null };
+}
+
+export async function disconnectFitbitAction(): Promise<ActionResult> {
+  try {
+    await disconnectFitbit();
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to disconnect." };
+  }
+  revalidatePath("/settings");
   return { error: null };
 }
