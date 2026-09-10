@@ -84,7 +84,9 @@ export function EventFormDialog({
               <Label htmlFor="calendarId">Calendar</Label>
               <Select value={calendarId} onValueChange={(v) => setCalendarId(v ?? "")}>
                 <SelectTrigger id="calendarId" className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    {(value: string) => calendars.find((c) => c.id === value)?.name ?? ""}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {calendars.map((c) => (

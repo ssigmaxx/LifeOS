@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listCategories, listHabits, listHabitLogs } from "@/lib/services/habit-service";
+import { listCategories, listHabits, listHabitLogs, type Habit, type HabitCategory } from "@/lib/services/habit-service";
 import { listGoals } from "@/lib/services/goal-service";
 import { listTodos } from "@/lib/services/todo-service";
 import { listJournalEntries } from "@/lib/services/journal-service";
@@ -11,6 +11,11 @@ type DatasetKey = (typeof DATASET_KEYS)[number];
 
 function isDatasetKey(value: string): value is DatasetKey {
   return (DATASET_KEYS as readonly string[]).includes(value);
+}
+
+function withCategoryNames(habits: Habit[], categories: HabitCategory[]) {
+  const nameById = new Map(categories.map((c) => [c.id, c.name]));
+  return habits.map((h) => ({ ...h, categoryName: h.categoryId ? (nameById.get(h.categoryId) ?? null) : null }));
 }
 
 function csvCell(value: unknown): string {
@@ -70,7 +75,7 @@ export async function GET(request: Request) {
     if (format === "csv") {
       const sections: string[] = [];
       if (datasets.has("habits")) {
-        sections.push(toCsvTable("Habits", habits));
+        sections.push(toCsvTable("Habits", withCategoryNames(habits, habitCategories)));
         sections.push(toCsvTable("Habit categories", habitCategories));
       }
       if (datasets.has("habitLogs")) sections.push(toCsvTable("Habit logs", habitLogs));
@@ -93,7 +98,7 @@ export async function GET(request: Request) {
       range: { start: start ?? null, end: end ?? null },
     };
     if (datasets.has("habits")) {
-      payload.habits = habits;
+      payload.habits = withCategoryNames(habits, habitCategories);
       payload.habitCategories = habitCategories;
     }
     if (datasets.has("habitLogs")) payload.habitLogs = habitLogs;

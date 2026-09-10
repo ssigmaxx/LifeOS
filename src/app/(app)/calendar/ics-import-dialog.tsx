@@ -49,7 +49,11 @@ export function IcsImportDialog({ trigger, calendars }: { trigger: ReactNode; ca
             <Label htmlFor="calendarId">Add to</Label>
             <Select value={target} onValueChange={(v) => setTarget(v ?? "__new__")}>
               <SelectTrigger id="calendarId" className="w-full">
-                <SelectValue />
+                <SelectValue>
+                  {(value: string) =>
+                    value === "__new__" ? "New calendar…" : (calendars.find((c) => c.id === value)?.name ?? "")
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {calendars.map((c) => (

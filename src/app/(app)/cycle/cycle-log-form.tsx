@@ -13,6 +13,14 @@ import type { CycleLog } from "@/lib/services/cycle-service";
 import { runAction } from "@/lib/toast-action";
 import { deleteCycleLogAction, saveCycleLogAction, type FormActionState } from "./actions";
 
+const PERIOD_FLOW_LABELS: Record<string, string> = {
+  none: "None today",
+  spotting: "Spotting",
+  light: "Light",
+  medium: "Medium",
+  heavy: "Heavy",
+};
+
 const initialState: FormActionState = { error: null };
 
 export function CycleLogForm({ date, log }: { date: string; log: CycleLog | null }) {
@@ -47,7 +55,7 @@ export function CycleLogForm({ date, log }: { date: string; log: CycleLog | null
               <Label htmlFor="periodFlow">Period flow</Label>
               <Select name="periodFlow" defaultValue={log?.periodFlow ?? "none"}>
                 <SelectTrigger id="periodFlow" className="w-full">
-                  <SelectValue />
+                  <SelectValue>{(value: string) => PERIOD_FLOW_LABELS[value] ?? value}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None today</SelectItem>
@@ -74,7 +82,9 @@ export function CycleLogForm({ date, log }: { date: string; log: CycleLog | null
               <Label htmlFor="mood">Mood</Label>
               <Select name="mood" defaultValue={log?.mood != null ? String(log.mood) : undefined}>
                 <SelectTrigger id="mood" className="w-full">
-                  <SelectValue placeholder="Not logged" />
+                  <SelectValue placeholder="Not logged">
+                    {(value: string) => MOOD_LABELS[Number(value)] ?? "Not logged"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(MOOD_LABELS).map(([value, label]) => (
@@ -90,7 +100,9 @@ export function CycleLogForm({ date, log }: { date: string; log: CycleLog | null
               <Label htmlFor="painLevel">Pain</Label>
               <Select name="painLevel" defaultValue={log?.painLevel != null ? String(log.painLevel) : undefined}>
                 <SelectTrigger id="painLevel" className="w-full">
-                  <SelectValue placeholder="Not logged" />
+                  <SelectValue placeholder="Not logged">
+                    {(value: string) => PAIN_LABELS[Number(value)] ?? "Not logged"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(PAIN_LABELS).map(([value, label]) => (

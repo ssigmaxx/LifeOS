@@ -18,6 +18,12 @@ const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; hint: string }[] 
   { value: "very_active", label: "Very active", hint: "Physical job or 2x/day training" },
 ];
 
+const GOAL_LABELS: Record<NutritionGoal, string> = {
+  lose: "Lose weight",
+  maintain: "Maintain weight",
+  gain: "Gain weight",
+};
+
 const initialState: SaveProfileResult = { error: null, plan: null };
 
 export function NutritionProfileForm({ profile }: { profile: NutritionProfile | null }) {
@@ -46,7 +52,7 @@ export function NutritionProfileForm({ profile }: { profile: NutritionProfile | 
             <Label htmlFor="sex-select">Sex</Label>
             <Select value={sex} onValueChange={(v) => setSex(v as Sex)}>
               <SelectTrigger id="sex-select" className="w-full">
-                <SelectValue />
+                <SelectValue>{(value: Sex) => (value === "female" ? "Female" : "Male")}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="female">Female</SelectItem>
@@ -87,7 +93,9 @@ export function NutritionProfileForm({ profile }: { profile: NutritionProfile | 
           <Label htmlFor="activity-select">Activity level</Label>
           <Select value={activityLevel} onValueChange={(v) => setActivityLevel(v as ActivityLevel)}>
             <SelectTrigger id="activity-select" className="w-full">
-              <SelectValue />
+              <SelectValue>
+                {(value: ActivityLevel) => ACTIVITY_OPTIONS.find((opt) => opt.value === value)?.label ?? value}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {ACTIVITY_OPTIONS.map((opt) => (
@@ -103,7 +111,7 @@ export function NutritionProfileForm({ profile }: { profile: NutritionProfile | 
           <Label htmlFor="goal-select">Goal</Label>
           <Select value={goal} onValueChange={(v) => setGoal(v as NutritionGoal)}>
             <SelectTrigger id="goal-select" className="w-full">
-              <SelectValue />
+              <SelectValue>{(value: NutritionGoal) => GOAL_LABELS[value]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="lose">Lose weight</SelectItem>

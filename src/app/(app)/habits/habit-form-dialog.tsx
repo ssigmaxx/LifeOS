@@ -125,7 +125,9 @@ export function HabitFormDialog({
               <Label htmlFor="categoryId">Category</Label>
               <Select name="categoryId" defaultValue={habit?.categoryId ?? ""}>
                 <SelectTrigger id="categoryId" className="w-full">
-                  <SelectValue placeholder="None" />
+                  <SelectValue placeholder="None">
+                    {(value: string) => categories.find((c) => c.id === value)?.name ?? "None"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">None</SelectItem>
@@ -147,7 +149,7 @@ export function HabitFormDialog({
             <Label htmlFor="trackingType">Tracking type</Label>
             <Select value={trackingType} onValueChange={(v) => setTrackingType(v as TrackingType)}>
               <SelectTrigger id="trackingType" className="w-full">
-                <SelectValue />
+                <SelectValue>{(value: TrackingType) => TRACKING_TYPE_LABELS[value]}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {(Object.keys(TRACKING_TYPE_LABELS) as TrackingType[]).map((t) => (

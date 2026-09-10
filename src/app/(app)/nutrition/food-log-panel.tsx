@@ -166,7 +166,9 @@ function AddRow({
             <Label className="text-xs">Meal</Label>
             <Select value={mealType} onValueChange={(v) => setMealType(v as MealType)}>
               <SelectTrigger className="h-8 w-32">
-                <SelectValue />
+                <SelectValue>
+                  {(value: MealType) => MEAL_OPTIONS.find((m) => m.value === value)?.label ?? value}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {MEAL_OPTIONS.map((m) => (
@@ -310,7 +312,9 @@ function ManualEntryForm({ onLogged, onError }: { onLogged: (name: string) => vo
             <Label className="text-xs">Meal</Label>
             <Select value={mealType} onValueChange={(v) => setMealType(v as MealType)}>
               <SelectTrigger className="w-32">
-                <SelectValue />
+                <SelectValue>
+                  {(value: MealType) => MEAL_OPTIONS.find((m) => m.value === value)?.label ?? value}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {MEAL_OPTIONS.map((m) => (
@@ -545,7 +549,7 @@ export function FoodLogPanel({ savedFoods }: { savedFoods: SavedFood[] }) {
         <Label className="text-xs">Where did you buy this?</Label>
         <Select value={store} onValueChange={(v) => setStore(v ?? "any")}>
           <SelectTrigger className="w-full">
-            <SelectValue />
+            <SelectValue>{(value: string) => (value === "any" ? "Any store" : value)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="any">Any store</SelectItem>
