@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -34,34 +34,6 @@ export const TOUR_DISMISS_KEY = "lifeos-onboarding-tour-dismissed";
 // localStorage) — skipping it should stop nagging for this login, but it
 // comes back next time you sign in, right up until a habit actually exists.
 const CHECKLIST_SESSION_KEY = "lifeos-onboarding-checklist-dismissed";
-
-function subscribe() {
-  // Nothing outside this component changes these flags, so there's no
-  // external event to listen for — this store only ever needs reading.
-  return () => {};
-}
-
-// Packed into one 2-character snapshot so a single useSyncExternalStore call
-// covers both flags together. That single source of truth is what keeps the
-// tour and checklist from ever both being open at once: previously each had
-// its own independent localStorage read with no way to notice when the
-// other one changed, so dismissing one right as the other mounted could
-// render both dialogs stacked — each with its own full-screen overlay —
-// which is also why their buttons stopped responding to clicks (the wrong
-// overlay was on top, eating the pointer events).
-function getSnapshot() {
-  try {
-    const tourDone = localStorage.getItem(TOUR_DISMISS_KEY) === "1" ? "1" : "0";
-    const checklistDone = sessionStorage.getItem(CHECKLIST_SESSION_KEY) === "1" ? "1" : "0";
-    return tourDone + checklistDone;
-  } catch {
-    return "00";
-  }
-}
-
-function getServerSnapshot() {
-  return "00";
-}
 
 type Slide = { title: string; description: string; href: string; icon: LucideIcon };
 
@@ -141,13 +113,45 @@ export type OnboardingStep = {
 };
 
 export function OnboardingFlow({ steps }: { steps: OnboardingStep[] }) {
-  const persisted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  // Deliberately NOT useSyncExternalStore here: that relies on React
+  // noticing a mismatch between getServerSnapshot's value and the real
+  // client read, then scheduling a corrective re-render on its own after
+  // hydration — on a page this size (many other client components/hooks
+  // mounting alongside it) that automatic resync was landing unreliably,
+  // leaving the tour stuck showing "not dismissed" even when localStorage
+  // already had it marked dismissed. Reading the real values explicitly in
+  // an effect after mount is a plainer, more predictable pattern: nothing
+  // is shown until the effect has actually run and set real state, so
+  // there's nothing to resync — same SSR-safety, no reliance on automatic
+  // reconciliation.
+  const [mounted, setMounted] = useState(false);
+  const [tourPersistedDismissed, setTourPersistedDismissed] = useState(false);
+  const [checklistPersistedDismissed, setChecklistPersistedDismissed] = useState(false);
   const [tourClosedNow, setTourClosedNow] = useState(false);
   const [checklistClosedNow, setChecklistClosedNow] = useState(false);
   const [tourStep, setTourStep] = useState(0);
 
-  const tourDismissed = persisted[0] === "1" || tourClosedNow;
-  const checklistDismissedThisSession = persisted[1] === "1" || checklistClosedNow;
+  useEffect(() => {
+    // The lint rule this disables is aimed at effects that could instead be
+    // plain derived state; it doesn't apply to the standard "read a
+    // browser-only API once after mount, to stay SSR-safe" pattern this is
+    // — see the comment above the state declarations.
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTourPersistedDismissed(localStorage.getItem(TOUR_DISMISS_KEY) === "1");
+    } catch {
+      // Storage unavailable (private browsing, etc.) — treat as not dismissed.
+    }
+    try {
+      setChecklistPersistedDismissed(sessionStorage.getItem(CHECKLIST_SESSION_KEY) === "1");
+    } catch {
+      // Storage unavailable — treat as not dismissed.
+    }
+    setMounted(true);
+  }, []);
+
+  const tourDismissed = tourPersistedDismissed || tourClosedNow;
+  const checklistDismissedThisSession = checklistPersistedDismissed || checklistClosedNow;
   // The checklist's whole job is getting a first habit created — once
   // that's done, stop showing it for good, regardless of the other steps or
   // whether it was ever explicitly skipped.
@@ -188,15 +192,19 @@ export function OnboardingFlow({ steps }: { steps: OnboardingStep[] }) {
     }
   }
 
-  // showChecklist requires !showTour so the two dialogs can never both be
-  // open — see the getSnapshot comment above for why that matters. `open`
-  // is passed as the live showTour/showChecklist value (not a hardcoded
-  // `true` with the Dialog conditionally mounted instead) — base-ui's
-  // close machinery (X button, Escape, backdrop click) needs a genuinely
-  // reactive open prop to fire onOpenChange correctly; a Dialog that's
-  // always rendered with a fixed `open` value doesn't reliably wire that up.
-  const showTour = !tourDismissed;
-  const showChecklist = !showTour && !habitCreated && !checklistDismissedThisSession;
+  // Gated on `mounted` so nothing ever shows before the effect above has
+  // actually read the real localStorage/sessionStorage values — the server
+  // render and the very first client paint both show neither dialog,
+  // identically, so there's no SSR/client mismatch to reconcile at all.
+  // showChecklist also requires !showTour so the two dialogs can never both
+  // be open at once. `open` is passed as the live showTour/showChecklist
+  // value (not a hardcoded `true` with the Dialog conditionally mounted
+  // instead) — base-ui's close machinery (X button, Escape, backdrop
+  // click) needs a genuinely reactive open prop to fire onOpenChange
+  // correctly; a Dialog that's always rendered with a fixed `open` value
+  // doesn't reliably wire that up.
+  const showTour = mounted && !tourDismissed;
+  const showChecklist = mounted && !showTour && !habitCreated && !checklistDismissedThisSession;
 
   const slide = SLIDES[tourStep];
   const isLastSlide = tourStep === SLIDES.length - 1;
