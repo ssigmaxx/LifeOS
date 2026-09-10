@@ -8,6 +8,7 @@ export const en = {
     habits: "Habits",
     todos: "Todos",
     cycle: "Cycle",
+    health: "Health",
     nutrition: "Nutrition",
     carbon: "Carbon",
     budget: "Budget",
