@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Activity, BatteryCharging, Flame, Footprints, HeartPulse, Moon } from "lucide-react";
+import { Activity, BatteryCharging, Flame, Footprints, HeartPulse, Moon, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
@@ -99,6 +99,7 @@ export default async function HealthPage() {
     latestSteps,
     latestHeartRate,
     latestAvgHeartRate,
+    latestCalories,
     latestSleep,
     stepsPct,
     sleepPct,
@@ -113,6 +114,7 @@ export default async function HealthPage() {
   const sleepPoints = chronological.map((m) => ({ date: m.date, value: m.sleepMinutes }));
   const heartRatePoints = chronological.map((m) => ({ date: m.date, value: m.restingHeartRate }));
   const avgHeartRatePoints = chronological.map((m) => ({ date: m.date, value: m.avgHeartRate }));
+  const caloriesPoints = chronological.map((m) => ({ date: m.date, value: m.caloriesBurned }));
 
   const stepsSubtitle = latestSteps?.steps != null ? (stepsRemaining > 0 ? `${stepsRemaining.toLocaleString()} to go` : "Goal reached!") : undefined;
   const sleepSubtitle = latestSleep?.sleepMinutes != null ? (sleepDeficitMinutes > 0 ? `${formatMinutes(sleepDeficitMinutes)} short of your goal` : "Goal reached!") : undefined;
@@ -221,6 +223,15 @@ export default async function HealthPage() {
             progress={latestSleep ? sleepPct : undefined}
             hint={latestSleep?.date}
           />
+          <HealthStatPill
+            icon={Zap}
+            color="var(--health-calories)"
+            textClassName="text-white"
+            label="Calories burned"
+            value={latestCalories ? `${latestCalories.caloriesBurned!.toLocaleString()} kcal` : "—"}
+            subtitle="Basal + active energy"
+            hint={latestCalories?.date}
+          />
         </div>
       </div>
 
@@ -260,6 +271,15 @@ export default async function HealthPage() {
             <TrendChart points={avgHeartRatePoints} metric="avgHeartRate" color="var(--health-heart)" />
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Calories burned</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TrendChart points={caloriesPoints} metric="calories" color="var(--health-calories)" />
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -280,6 +300,7 @@ export default async function HealthPage() {
                     <th className="py-2 pr-4 font-medium">Steps</th>
                     <th className="py-2 pr-4 font-medium">Resting HR</th>
                     <th className="py-2 pr-4 font-medium">Avg HR</th>
+                    <th className="py-2 pr-4 font-medium">Calories</th>
                     <th className="py-2 font-medium">Sleep</th>
                   </tr>
                 </thead>
@@ -293,6 +314,9 @@ export default async function HealthPage() {
                       </td>
                       <td className="py-2 pr-4 tabular-nums">
                         {row.avgHeartRate != null ? `${row.avgHeartRate} bpm` : "—"}
+                      </td>
+                      <td className="py-2 pr-4 tabular-nums">
+                        {row.caloriesBurned != null ? row.caloriesBurned.toLocaleString() : "—"}
                       </td>
                       <td className="py-2 tabular-nums">
                         {row.sleepMinutes != null ? formatMinutes(row.sleepMinutes) : "—"}
