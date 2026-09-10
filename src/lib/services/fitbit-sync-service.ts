@@ -65,12 +65,9 @@ async function fetchSleepList(accessToken: string) {
   return json.dataPoints ?? [];
 }
 
-// The exact leaf field name inside each rollup value (StepsRollupValue,
-// HeartRateRollupValue) wasn't confirmed against a live response at
-// write time, so this tries the plausible candidates in order rather
-// than hardcoding one guess. `raw` is stored alongside every row
-// specifically so a wrong guess here can be corrected later by reading
-// real synced data instead of needing another live API call.
+// Confirmed against a real synced response (see the debug card on the
+// Health page): steps.countSum and heartRate.beatsPerMinuteAvg are the
+// actual leaf fields — neither was in the original guess list.
 function pickNumber(obj: unknown, keys: string[]): number | null {
   if (!obj || typeof obj !== "object") return null;
   const record = obj as Record<string, unknown>;
@@ -82,12 +79,18 @@ function pickNumber(obj: unknown, keys: string[]): number | null {
   return null;
 }
 
+// Rollup entries have no top-level startTime string at all — the date
+// lives at civilStartTime.date.{year,month,day}, which is why every
+// point was silently skipped before (rollupEntryDate always returned
+// null). civilStartTime is used rather than civilEndTime since a rollup
+// window's start is the civil day the data was accumulated on.
 function rollupEntryDate(entry: unknown): string | null {
   if (!entry || typeof entry !== "object") return null;
   const record = entry as Record<string, unknown>;
-  const startTime = record.startTime;
-  if (typeof startTime !== "string") return null;
-  return startTime.slice(0, 10);
+  const civilStartTime = record.civilStartTime as Record<string, unknown> | undefined;
+  const dateObj = civilStartTime?.date as { year?: number; month?: number; day?: number } | undefined;
+  if (!dateObj?.year) return null;
+  return `${dateObj.year}-${String(dateObj.month).padStart(2, "0")}-${String(dateObj.day).padStart(2, "0")}`;
 }
 
 async function syncOneConnection(row: FitbitConnectionRow) {
@@ -135,7 +138,7 @@ async function syncOneConnection(row: FitbitConnectionRow) {
     if (!date) continue;
     const record = point as Record<string, unknown>;
     const entry = entryFor(date);
-    entry.steps = pickNumber(record.steps, ["count", "value", "sum", "total"]);
+    entry.steps = pickNumber(record.steps, ["countSum"]);
     entry.raw.steps = point;
   }
 
@@ -144,7 +147,8 @@ async function syncOneConnection(row: FitbitConnectionRow) {
     if (!date) continue;
     const record = point as Record<string, unknown>;
     const entry = entryFor(date);
-    entry.heartRate = pickNumber(record.heartRate, ["avgBpm", "averageBpm", "average", "restingBpm", "min"]);
+    const avgBpm = pickNumber(record.heartRate, ["beatsPerMinuteAvg"]);
+    entry.heartRate = avgBpm != null ? Math.round(avgBpm) : null;
     entry.raw.heartRate = point;
   }
 
@@ -153,15 +157,18 @@ async function syncOneConnection(row: FitbitConnectionRow) {
   const startDate = start.toISOString().slice(0, 10);
   const endDate = end.toISOString().slice(0, 10);
   for (const point of sleepPoints) {
+    // Confirmed against a real response: the whole session is nested one
+    // level under "sleep" (point.sleep.interval / point.sleep.summary),
+    // not flat on the point itself — and the interval uses a plain UTC
+    // startTime string, not a civil date object.
     const record = point as Record<string, unknown>;
-    const interval = record.interval as Record<string, unknown> | undefined;
-    const civilStart = interval?.civilStartTime as Record<string, unknown> | undefined;
-    const dateObj = civilStart?.date as { year?: number; month?: number; day?: number } | undefined;
-    const date = dateObj?.year
-      ? `${dateObj.year}-${String(dateObj.month).padStart(2, "0")}-${String(dateObj.day).padStart(2, "0")}`
-      : null;
+    const sleep = record.sleep as Record<string, unknown> | undefined;
+    const interval = sleep?.interval as Record<string, unknown> | undefined;
+    const startTime = interval?.startTime;
+    const date = typeof startTime === "string" ? startTime.slice(0, 10) : null;
     if (!date || date < startDate || date > endDate) continue;
-    const durationMinutes = pickNumber(record, ["durationMinutes", "minutes"]);
+    const summary = sleep?.summary as Record<string, unknown> | undefined;
+    const durationMinutes = pickNumber(summary, ["minutesAsleep"]);
     const entry = entryFor(date);
     // Sum rather than overwrite — a night can have more than one sleep
     // session (a nap plus the main sleep), all landing on the same date.
