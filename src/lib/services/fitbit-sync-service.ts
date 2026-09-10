@@ -16,8 +16,14 @@ type FitbitConnectionRow = {
   expires_at: string;
 };
 
-function dayBoundaryIso(d: Date) {
-  return `${isoDate(d)}T00:00:00Z`;
+// Confirmed against the allenporter/python-google-health-api client's
+// actual request construction (source of truth here, since the public
+// docs/discovery doc kept describing a different shape that Google's own
+// API rejected three times running): range.start/range.end are
+// CivilDateTime objects — { date: { year, month, day } } — not
+// startTime/endTime or civilStartTime/civilEndTime.
+function civilDateTime(d: Date) {
+  return { date: { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() } };
 }
 
 function isoDate(d: Date) {
@@ -33,7 +39,7 @@ async function fetchDailyRollup(accessToken: string, dataType: string, start: Da
       Accept: "application/json",
     },
     body: JSON.stringify({
-      range: { startTime: dayBoundaryIso(start), endTime: dayBoundaryIso(end) },
+      range: { start: civilDateTime(start), end: civilDateTime(end) },
       windowSizeDays: 1,
     }),
   });
