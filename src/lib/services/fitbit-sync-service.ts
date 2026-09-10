@@ -46,17 +46,15 @@ async function fetchDailyRollup(accessToken: string, dataType: string, start: Da
   return json.rollupDataPoints ?? [];
 }
 
-async function fetchSleepList(accessToken: string, start: Date, end: Date) {
+async function fetchSleepList(accessToken: string) {
   const url = new URL(`${HEALTH_API_BASE}/sleep/dataPoints`);
-  // Confirmed against the same client's DataType registration for sleep:
-  // the filterable member is interval.start_time (plain UTC, "Z" suffix),
-  // not interval.civil_start_time — that one's rejected with
-  // INVALID_DATA_POINT_FILTER_DATA_TYPE_MEMBER.
-  url.searchParams.set(
-    "filter",
-    `sleep.interval.start_time >= "${start.toISOString()}" AND sleep.interval.start_time < "${end.toISOString()}"`,
-  );
-  url.searchParams.set("pageSize", "50");
+  // Both interval.civil_start_time and interval.start_time were rejected
+  // with INVALID_DATA_POINT_FILTER_DATA_TYPE_MEMBER — sleep apparently
+  // doesn't support filtering on that member at all (the client library's
+  // hardcoded field path was stale/wrong). Sidestepping it: fetch the
+  // most recent sessions unfiltered and let the caller discard whatever
+  // falls outside the sync window instead of guessing a third field name.
+  url.searchParams.set("pageSize", "20");
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
   });
@@ -119,7 +117,7 @@ async function syncOneConnection(row: FitbitConnectionRow) {
   const [stepsRollup, heartRateRollup, sleepPoints] = await Promise.all([
     fetchDailyRollup(accessToken, "steps", start, end),
     fetchDailyRollup(accessToken, "heart-rate", start, end),
-    fetchSleepList(accessToken, start, end),
+    fetchSleepList(accessToken),
   ]);
 
   const byDate = new Map<string, { steps: number | null; heartRate: number | null; sleepMinutes: number | null; raw: Record<string, unknown> }>();
@@ -150,6 +148,10 @@ async function syncOneConnection(row: FitbitConnectionRow) {
     entry.raw.heartRate = point;
   }
 
+  // fetchSleepList returns recent sessions unfiltered (see its comment) —
+  // date strings sort lexicographically, so a plain string bound works.
+  const startDate = start.toISOString().slice(0, 10);
+  const endDate = end.toISOString().slice(0, 10);
   for (const point of sleepPoints) {
     const record = point as Record<string, unknown>;
     const interval = record.interval as Record<string, unknown> | undefined;
@@ -158,7 +160,7 @@ async function syncOneConnection(row: FitbitConnectionRow) {
     const date = dateObj?.year
       ? `${dateObj.year}-${String(dateObj.month).padStart(2, "0")}-${String(dateObj.day).padStart(2, "0")}`
       : null;
-    if (!date) continue;
+    if (!date || date < startDate || date > endDate) continue;
     const durationMinutes = pickNumber(record, ["durationMinutes", "minutes"]);
     const entry = entryFor(date);
     // Sum rather than overwrite — a night can have more than one sleep
