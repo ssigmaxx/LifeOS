@@ -25,6 +25,7 @@ export function RingCluster({
   centerValue,
   centerLabel,
   className,
+  colors = RING_COLORS,
 }: {
   rings: RingData[];
   size?: number;
@@ -33,6 +34,8 @@ export function RingCluster({
   centerValue?: ReactNode;
   centerLabel?: ReactNode;
   className?: string;
+  /** Per-ring stroke colors, outer ring first. Defaults to the grayscale ramp. */
+  colors?: string[];
 }) {
   const center = size / 2;
   const maxRadius = center - strokeWidth / 2;
@@ -61,7 +64,7 @@ export function RingCluster({
                 r={radius}
                 strokeWidth={strokeWidth}
                 fill="none"
-                stroke={RING_COLORS[i % RING_COLORS.length]}
+                stroke={colors[i % colors.length]}
                 strokeLinecap="round"
                 strokeDasharray={circumference}
                 strokeDashoffset={offset}
@@ -81,15 +84,12 @@ export function RingCluster({
   );
 }
 
-export function RingLegend({ rings }: { rings: RingData[] }) {
+export function RingLegend({ rings, colors = RING_COLORS }: { rings: RingData[]; colors?: string[] }) {
   return (
     <div className="flex flex-col gap-2 text-sm">
       {rings.map((ring, i) => (
         <div key={ring.label} className="flex items-center gap-2">
-          <span
-            className="size-1.5 shrink-0 rounded-full"
-            style={{ background: RING_COLORS[i % RING_COLORS.length] }}
-          />
+          <span className="size-1.5 shrink-0 rounded-full" style={{ background: colors[i % colors.length] }} />
           <span className="font-medium">{ring.label}</span>
           <span className="ml-auto pl-2 text-xs text-muted-foreground tabular-nums">{ring.valueLabel}</span>
         </div>
