@@ -15,6 +15,7 @@ export type DailyHealthMetric = {
   steps: number | null;
   restingHeartRate: number | null;
   avgHeartRate: number | null;
+  caloriesBurned: number | null;
   sleepMinutes: number | null;
 };
 
@@ -23,7 +24,7 @@ export async function getRecentHealthMetrics(days: number): Promise<DailyHealthM
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const { data, error } = await supabase
     .from("health_daily_metrics")
-    .select("date, steps, resting_heart_rate, avg_heart_rate, sleep_minutes")
+    .select("date, steps, resting_heart_rate, avg_heart_rate, calories_burned, sleep_minutes")
     .eq("user_id", userId)
     .gte("date", since)
     .order("date", { ascending: false });
@@ -33,6 +34,7 @@ export async function getRecentHealthMetrics(days: number): Promise<DailyHealthM
     steps: row.steps,
     restingHeartRate: row.resting_heart_rate,
     avgHeartRate: row.avg_heart_rate,
+    caloriesBurned: row.calories_burned,
     sleepMinutes: row.sleep_minutes,
   }));
 }
