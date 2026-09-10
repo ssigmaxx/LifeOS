@@ -46,6 +46,20 @@ async function fetchDailyRollup(accessToken: string, dataType: string, start: Da
   return json.rollupDataPoints ?? [];
 }
 
+// total-calories is new and unverified against a live response (unlike
+// steps/heart-rate/sleep, which were each confirmed against real synced
+// data). If Google rejects this call for any reason, it must not take the
+// rest of the sync down with it — steps/heart-rate/sleep are proven and
+// should keep working even on days calories can't be fetched.
+async function fetchCaloriesRollupSafe(accessToken: string, start: Date, end: Date) {
+  try {
+    return await fetchDailyRollup(accessToken, "total-calories", start, end);
+  } catch (err) {
+    console.error("[fitbit-sync] total-calories rollup failed, skipping calories for this sync:", err);
+    return [];
+  }
+}
+
 async function fetchSleepList(accessToken: string) {
   const url = new URL(`${HEALTH_API_BASE}/sleep/dataPoints`);
   // Both interval.civil_start_time and interval.start_time were rejected
@@ -119,7 +133,7 @@ async function syncOneConnection(row: FitbitConnectionRow) {
   const [stepsRollup, heartRateRollup, caloriesRollup, sleepPoints] = await Promise.all([
     fetchDailyRollup(accessToken, "steps", start, end),
     fetchDailyRollup(accessToken, "heart-rate", start, end),
-    fetchDailyRollup(accessToken, "total-calories", start, end),
+    fetchCaloriesRollupSafe(accessToken, start, end),
     fetchSleepList(accessToken),
   ]);
 
