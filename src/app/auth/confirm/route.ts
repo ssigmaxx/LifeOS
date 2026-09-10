@@ -16,13 +16,20 @@ function safeNextPath(next: string | null): string {
 // Password reset needs to continue straight into /update-password with the
 // fresh session it just got — that page is where the flow actually
 // finishes. Every other case reaching here is a signup confirmation, which
-// is already done the moment this succeeds: send them to a plain "you're
-// confirmed, log in" state instead of dropping them straight into the app.
-// A silent redirect into the app reads as "nothing happened" if literally
-// anything downstream hiccups (an extra render, a slow cold start), which
-// is a worse experience than just telling them plainly what happened.
+// is already done the moment this succeeds: send them into the app with a
+// one-time "you're confirmed" banner instead of silently dropping them in
+// with no acknowledgment at all — a silent redirect reads as "nothing
+// happened" if literally anything downstream hiccups (an extra render, a
+// slow cold start).
+//
+// This goes to "/" and not "/login": exchangeCodeForSession/verifyOtp
+// above already set a valid session, so the very next request IS
+// authenticated — and src/lib/supabase/middleware.ts redirects any
+// authenticated request to "/login" straight to "/" (dropping query
+// params), which would silently swallow a "/login?confirmed=1" target
+// before the banner ever rendered.
 function afterConfirmRedirect(next: string): string {
-  return next === "/update-password" ? next : "/login?confirmed=1";
+  return next === "/update-password" ? next : "/?confirmed=1";
 }
 
 export async function GET(request: NextRequest) {

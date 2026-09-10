@@ -11,10 +11,16 @@ const ACTIVITY_CHECK_MS = 5000;
 const LOCKED_KEY = "lifeos-app-locked";
 const LAST_ACTIVE_KEY = "lifeos-app-last-active";
 
-function subscribe() {
-  // Nothing outside this component changes these flags, so there's no
-  // external event to listen for — this store only ever needs reading.
-  return () => {};
+function subscribe(callback: () => void) {
+  // Unlike other localStorage-backed stores in this app, this one DOES
+  // change from outside this exact component instance — another tab on the
+  // same device can lock or unlock it. The native "storage" event only
+  // fires in *other* tabs, never the one that made the write, which is
+  // exactly what's needed here: without it, locking in tab A would leave
+  // tab B showing sensitive data until something unrelated happened to
+  // re-render it.
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
 }
 
 // Pure, synchronous read of "should this device currently be considered

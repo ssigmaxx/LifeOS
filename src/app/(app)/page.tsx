@@ -16,7 +16,12 @@ import { NutritionCard } from "./today/nutrition-card";
 
 const UNCATEGORIZED_ANCHOR = "uncategorized";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ confirmed?: string }>;
+}) {
+  const { confirmed } = await searchParams;
   // listHabits() is fetched once and reused for both the streak list below
   // and today's summary (via summarizeToday) — today-service's own
   // getTodaySummary() would call listHabits() a second time internally.
@@ -52,6 +57,12 @@ export default async function DashboardPage() {
           Your at-a-glance overview of habits, streaks, and recent trends.
         </p>
       </div>
+
+      {confirmed ? (
+        <p role="status" className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
+          Your account is confirmed — welcome to LifeOS.
+        </p>
+      ) : null}
 
       <OnboardingFlow steps={onboardingSteps} />
 

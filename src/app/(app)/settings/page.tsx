@@ -14,8 +14,18 @@ export default async function SettingsPage() {
   const [preferences, cycleTrackingEnabled, profile, lockEnabled] = await Promise.all([
     getNotificationPreferences(),
     isCycleTrackingEnabled(),
-    getProfile(),
-    isLockEnabled(),
+    // Same fallback as (app)/layout.tsx's getProfile() call, for the same
+    // reason: a migration adding these columns not being applied yet
+    // shouldn't take out the whole Settings page, just leave the profile
+    // fields blank until it's fixed.
+    getProfile().catch(() => ({
+      displayName: null,
+      avatarIcon: null,
+      birthDate: null,
+      gender: null,
+      email: "",
+    })),
+    isLockEnabled().catch(() => false),
   ]);
 
   return (

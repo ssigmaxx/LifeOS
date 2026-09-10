@@ -21,14 +21,22 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: "female", label: "Female" },
 ];
 
+// Parses the "YYYY-MM-DD" string directly instead of going through `new
+// Date(birthDate)` — that parses as UTC midnight, and then reading it back
+// with the local getMonth()/getDate() getters below (needed to compare
+// against `now`, which must stay in the user's local time) shifts the date
+// by a day for anyone west of UTC, e.g. "2000-01-01" reads back as
+// December 31 in any UTC-negative timezone.
 function calculateAge(birthDate: string): number | null {
-  const parsed = new Date(birthDate);
-  if (Number.isNaN(parsed.getTime())) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const day = Number(match[3]);
+
   const now = new Date();
-  let age = now.getFullYear() - parsed.getFullYear();
-  const hasHadBirthdayThisYear =
-    now.getMonth() > parsed.getMonth() ||
-    (now.getMonth() === parsed.getMonth() && now.getDate() >= parsed.getDate());
+  let age = now.getFullYear() - year;
+  const hasHadBirthdayThisYear = now.getMonth() > month || (now.getMonth() === month && now.getDate() >= day);
   if (!hasHadBirthdayThisYear) age -= 1;
   return age >= 0 ? age : null;
 }
