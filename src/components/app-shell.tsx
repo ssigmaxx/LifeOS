@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Sparkles } from "lucide-react";
+import Image from "next/image";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -47,7 +47,7 @@ export function AppShell({
           <div className="flex min-w-0 flex-1 flex-col">
             <header className="flex h-14 items-center justify-between gap-2 border-b px-4 md:hidden">
               <div className="flex items-center gap-2">
-                <Sparkles className="size-5 text-primary" />
+                <Image src="/logo-mark.png" alt="" width={22} height={22} priority />
                 <span className="font-semibold tracking-tight">Meridian</span>
               </div>
               <div className="flex items-center gap-1.5">

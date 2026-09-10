@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { primaryNavSections, settingsNavItem, type NavItem } from "@/lib/nav";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -85,7 +85,7 @@ export function AppSidebar({
   return (
     <aside className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:border-r md:bg-sidebar md:text-sidebar-foreground">
       <div className="flex h-16 items-center gap-2 px-6">
-        <Sparkles className="size-5 text-primary" />
+        <Image src="/logo-mark.png" alt="" width={22} height={22} priority />
         <span className="text-lg font-semibold tracking-tight">Meridian</span>
       </div>
       <div className="px-3 pb-2">
