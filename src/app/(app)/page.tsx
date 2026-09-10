@@ -12,9 +12,13 @@ import { getDailyTotals, getNutritionProfile } from "@/lib/services/nutrition-se
 import { getTodosDueOnDate } from "@/lib/services/todo-service";
 import { getProfile } from "@/lib/services/profile-service";
 import { getRandomQuote } from "@/lib/quotes";
+import { summarizeHealthMetrics } from "@/lib/health-summary";
+import { isFitbitConnected } from "@/lib/services/fitbit-service";
+import { getRecentHealthMetrics } from "@/lib/services/health-service";
 import { OnboardingFlow, type OnboardingStep } from "@/components/onboarding-flow";
 import { ScoreTrendChart } from "./analytics/score-trend-chart";
 import { NutritionCard } from "./today/nutrition-card";
+import { HealthSummaryCard } from "./health/health-summary-card";
 
 const UNCATEGORIZED_ANCHOR = "uncategorized";
 
@@ -27,8 +31,18 @@ export default async function DashboardPage({
   // listHabits() is fetched once and reused for both the streak list below
   // and today's summary (via summarizeToday) — today-service's own
   // getTodaySummary() would call listHabits() a second time internally.
-  const [habits, todayLogs, todosToday, goals, trend, nutritionProfile, nutritionTotals, profile] =
-    await Promise.all([
+  const [
+    habits,
+    todayLogs,
+    todosToday,
+    goals,
+    trend,
+    nutritionProfile,
+    nutritionTotals,
+    profile,
+    fitbitConnected,
+    healthMetrics,
+  ] = await Promise.all([
       listHabits(),
       getTodayLogs(),
       getTodosDueOnDate(),
@@ -46,9 +60,12 @@ export default async function DashboardPage({
         gender: null,
         email: "",
       })),
+      isFitbitConnected().catch(() => false),
+      getRecentHealthMetrics(30).catch(() => []),
     ]);
   const summary = summarizeToday(habits, todayLogs, todosToday);
   const quote = getRandomQuote();
+  const healthSummary = fitbitConnected ? summarizeHealthMetrics(healthMetrics) : null;
 
   const scorePct = summary.score != null ? Math.round(summary.score * 100) : null;
   const activeStreaks = habits
@@ -113,6 +130,8 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
       </Link>
+
+      {healthSummary ? <HealthSummaryCard summary={healthSummary} /> : null}
 
       <div className="grid gap-6 md:grid-cols-5">
         <div className="space-y-2 md:col-span-3">
