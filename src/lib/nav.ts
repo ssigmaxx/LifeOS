@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  Activity,
   Apple,
   BarChart3,
   BookOpen,
@@ -55,6 +56,7 @@ export const primaryNavSections: NavSection[] = [
       { href: "/habits", label: "Habits", labelKey: "habits", icon: ListChecks },
       { href: "/todos", label: "Todos", labelKey: "todos", icon: ListTodo },
       { href: "/cycle", label: "Cycle", labelKey: "cycle", icon: HeartPulse },
+      { href: "/health", label: "Health", labelKey: "health", icon: Activity },
       { href: "/nutrition", label: "Nutrition", labelKey: "nutrition", icon: Apple },
       { href: "/carbon", label: "Carbon", labelKey: "carbon", icon: Leaf },
       { href: "/budget", label: "Budget", labelKey: "budget", icon: Wallet },
@@ -102,6 +104,7 @@ export const moreNav: NavItem[] = [
   { href: "/habits", label: "Habits", labelKey: "habits", icon: ListChecks },
   { href: "/todos", label: "Todos", labelKey: "todos", icon: ListTodo },
   { href: "/cycle", label: "Cycle", labelKey: "cycle", icon: HeartPulse },
+  { href: "/health", label: "Health", labelKey: "health", icon: Activity },
   { href: "/nutrition", label: "Nutrition", labelKey: "nutrition", icon: Apple },
   { href: "/carbon", label: "Carbon", labelKey: "carbon", icon: Leaf },
   { href: "/budget", label: "Budget", labelKey: "budget", icon: Wallet },

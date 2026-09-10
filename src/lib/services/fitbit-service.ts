@@ -89,6 +89,31 @@ export async function isFitbitConnected(): Promise<boolean> {
   return (count ?? 0) > 0;
 }
 
+export async function refreshAccessToken(refreshToken: string) {
+  const { clientId, clientSecret } = requireGoogleHealthEnv();
+  const response = await fetch(TOKEN_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "refresh_token",
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(`Google token refresh failed: ${response.status} ${await response.text()}`);
+  }
+  const json = (await response.json()) as {
+    access_token: string;
+    // Google doesn't always issue a new refresh_token on refresh — the
+    // caller should keep the old one when this is absent.
+    refresh_token?: string;
+    expires_in: number;
+  };
+  return json;
+}
+
 export async function disconnectFitbit() {
   const { supabase, userId } = await requireUserId();
   const { error } = await supabase.from("fitbit_connections").delete().eq("user_id", userId);
