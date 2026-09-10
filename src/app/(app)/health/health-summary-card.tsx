@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Footprints, HeartPulse, Moon, Zap } from "lucide-react";
+import { ArrowRight, Footprints, HeartPulse, Moon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatMinutes } from "@/lib/format";
 import type { HealthSummary } from "@/lib/health-summary";
@@ -8,7 +8,6 @@ const STAT_COLOR = {
   steps: "var(--health-steps)",
   heart: "var(--health-heart)",
   sleep: "var(--health-sleep)",
-  calories: "var(--health-calories)",
 } as const;
 
 function MiniStat({
@@ -42,12 +41,11 @@ function MiniStat({
 // (lib/health-summary.ts), so "today's resting HR" never disagrees
 // between screens.
 export function HealthSummaryCard({ summary, linkHref = "/health" }: { summary: HealthSummary; linkHref?: string }) {
-  const { latestSteps, latestHeartRate, latestAvgHeartRate, latestCalories, latestSleep, readinessScore } = summary;
+  const { latestSteps, latestHeartRate, latestAvgHeartRate, latestSleep, readinessScore } = summary;
   if (
     latestSteps == null &&
     latestHeartRate == null &&
     latestAvgHeartRate == null &&
-    latestCalories == null &&
     latestSleep == null
   ) {
     return null;
@@ -89,12 +87,6 @@ export function HealthSummaryCard({ summary, linkHref = "/health" }: { summary: 
               color={STAT_COLOR.sleep}
               value={latestSleep?.sleepMinutes != null ? formatMinutes(latestSleep.sleepMinutes) : "—"}
               hint="Sleep"
-            />
-            <MiniStat
-              icon={Zap}
-              color={STAT_COLOR.calories}
-              value={latestCalories?.caloriesBurned != null ? `${latestCalories.caloriesBurned.toLocaleString()} kcal` : "—"}
-              hint="Calories"
             />
           </div>
           <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
