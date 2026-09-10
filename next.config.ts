@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 // Every Supabase call the browser itself makes is an <img> load of a
 // signed storage URL (photo thumbnails/originals) — everything else
@@ -69,4 +70,19 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// disableLogger and automaticVercelMonitors are webpack-plugin options with
+// no Turbopack equivalent yet — this project builds with Turbopack (see the
+// dev-only comments above), so they're left off rather than set to a value
+// that silently does nothing.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  // Routes the browser SDK's error reports through this app's own origin
+  // (a route the Sentry build plugin wires up automatically) instead of
+  // straight to Sentry's ingest domain — keeps connect-src 'self' in the
+  // CSP above exactly as tight as it already was, no third-party exception
+  // needed for it.
+  tunnelRoute: "/monitoring",
+});

@@ -1,4 +1,5 @@
 import "server-only";
+import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { refreshAccessToken } from "@/lib/services/fitbit-service";
@@ -58,6 +59,7 @@ async function fetchCaloriesRollupSafe(accessToken: string, start: Date, end: Da
     return await fetchDailyRollup(accessToken, "total-calories", start, end);
   } catch (err) {
     console.error("[fitbit-sync] total-calories rollup failed, skipping calories for this sync:", err);
+    Sentry.captureException(err, { tags: { area: "fitbit-sync", metric: "calories" } });
     return [];
   }
 }
@@ -285,7 +287,10 @@ export async function syncAllFitbitConnections() {
     try {
       await syncOneConnection(row);
       synced += 1;
-    } catch {
+    } catch (err) {
+      // Previously silent — a failed sync only ever showed up as a number
+      // in this function's returned JSON, which nothing was watching.
+      Sentry.captureException(err, { tags: { area: "fitbit-sync" }, extra: { userId: row.user_id } });
       failed += 1;
     }
   }

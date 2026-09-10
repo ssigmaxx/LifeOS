@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import * as Sentry from "@sentry/nextjs";
 import { syncCurrentUserFitbit } from "@/lib/services/fitbit-sync-service";
 
 export type SyncResult = { error: string | null };
@@ -21,6 +22,7 @@ export async function syncFitbitNowAction(): Promise<SyncResult> {
     await syncCurrentUserFitbit();
   } catch (err) {
     console.error("[fitbit-sync] sync now failed:", err);
+    Sentry.captureException(err, { tags: { area: "fitbit-sync", trigger: "manual" } });
     return { error: errorMessage(err) };
   }
   revalidatePath("/health");

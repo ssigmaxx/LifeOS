@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { createHabit } from "@/lib/services/habit-service";
 import { addMilestone, createGoal } from "@/lib/services/goal-service";
@@ -72,6 +73,7 @@ export async function sendMessageAction(
     turn = await runAiConversationTurn(history, trimmed);
   } catch (err) {
     console.error("[ai-coach] runAiConversationTurn failed:", err);
+    Sentry.captureException(err, { tags: { area: "ai-coach" } });
     return {
       conversationId: convoId,
       text: "",
