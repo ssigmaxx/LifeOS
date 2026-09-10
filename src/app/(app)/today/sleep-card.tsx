@@ -40,7 +40,17 @@ function defaultWakeTime() {
 
 const initialState: FormActionState = { error: null };
 
-export function SleepCard({ latest }: { latest: SleepLog | null }) {
+// When a watch is connected and has synced a night's sleep, that value
+// takes priority over the manual log — the whole point of connecting a
+// watch is not having to type this in by hand. Manual logging stays
+// available underneath for days the sync hasn't caught up on yet.
+export function SleepCard({
+  latest,
+  autoSyncedMinutes,
+}: {
+  latest: SleepLog | null;
+  autoSyncedMinutes?: number | null;
+}) {
   const [open, setOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(logSleepAction, initialState);
   const [prevState, setPrevState] = useState(state);
@@ -49,6 +59,8 @@ export function SleepCard({ latest }: { latest: SleepLog | null }) {
     if (state !== initialState && !state.error) setOpen(false);
   }
 
+  const hasAutoSync = autoSyncedMinutes != null;
+
   return (
     <Card>
       <CardContent className="flex items-center gap-3">
@@ -56,10 +68,15 @@ export function SleepCard({ latest }: { latest: SleepLog | null }) {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">Sleep</p>
           <p className="text-xs text-muted-foreground">
-            {latest ? formatMinutes(latest.durationMinutes) : "Not logged yet"}
+            {hasAutoSync
+              ? formatMinutes(autoSyncedMinutes)
+              : latest
+                ? formatMinutes(latest.durationMinutes)
+                : "Not logged yet"}
           </p>
+          {hasAutoSync ? <p className="text-xs text-muted-foreground">Synced from your watch</p> : null}
         </div>
-        {latest ? (
+        {!hasAutoSync && latest ? (
           <Button
             type="button"
             size="icon"
@@ -70,6 +87,7 @@ export function SleepCard({ latest }: { latest: SleepLog | null }) {
             <Trash2 className="size-4" />
           </Button>
         ) : null}
+        {hasAutoSync ? null : (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger render={<Button type="button" size="sm" variant="outline" />}>
             Log
@@ -113,6 +131,7 @@ export function SleepCard({ latest }: { latest: SleepLog | null }) {
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </CardContent>
     </Card>
   );

@@ -27,6 +27,7 @@
   --color-health-heart: var(--health-heart);
   --color-health-sleep: var(--health-sleep);
   --color-health-readiness: var(--health-readiness);
+  --color-health-calories: var(--health-calories);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -86,6 +87,7 @@
   --health-heart: #f59e0b;
   --health-sleep: #3b82f6;
   --health-readiness: #db2777;
+  --health-calories: #ea580c;
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -126,6 +128,7 @@
   --health-heart: #d97706;
   --health-sleep: #3b82f6;
   --health-readiness: #db2777;
+  --health-calories: #ea580c;
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.78 0.11 180);
