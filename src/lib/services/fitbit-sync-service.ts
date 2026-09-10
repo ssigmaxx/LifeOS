@@ -36,7 +36,7 @@ async function fetchDailyRollup(accessToken: string, dataType: string, start: Da
       Accept: "application/json",
     },
     body: JSON.stringify({
-      range: { startDateTime: civilDate(start), endDateTime: civilDate(end) },
+      range: { civilStartTime: civilDate(start), civilEndTime: civilDate(end) },
       windowSizeDays: 1,
     }),
   });
