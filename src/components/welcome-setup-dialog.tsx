@@ -3,13 +3,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,16 +24,11 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
 
 // First-run only — gated by the caller on profile.displayName being empty,
 // so this never reappears once someone has actually set a name (whether
-// through here or later in Settings).
-export function WelcomeSetupDialog({
-  open,
-  onOpenChange,
-  onSaved,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSaved: () => void;
-}) {
+// through here or later in Settings). Built on AlertDialog rather than
+// Dialog specifically because it can't be skipped: AlertDialog doesn't
+// close on Escape or a backdrop click the way Dialog does, and there's no
+// close button here — the only way out is filling this in and continuing.
+export function WelcomeSetupDialog({ open, onSaved }: { open: boolean; onSaved: () => void }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -41,7 +36,10 @@ export function WelcomeSetupDialog({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const canContinue = displayName.trim() !== "" && birthDate !== "" && gender !== "";
+
   function save() {
+    if (!canContinue) return;
     setError(null);
     startTransition(async () => {
       const result = await updateProfileAction({ displayName, avatarIcon: "", birthDate, gender });
@@ -55,12 +53,12 @@ export function WelcomeSetupDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => (!next ? onOpenChange(false) : undefined)}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Welcome to Meridian</DialogTitle>
-          <DialogDescription>A couple of quick questions to get things set up for you.</DialogDescription>
-        </DialogHeader>
+    <AlertDialog open={open}>
+      <AlertDialogContent className="sm:max-w-sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Welcome to Meridian</AlertDialogTitle>
+          <AlertDialogDescription>A couple of quick questions to get things set up for you.</AlertDialogDescription>
+        </AlertDialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="welcomeName">What should we call you?</Label>
@@ -93,7 +91,7 @@ export function WelcomeSetupDialog({
                   key={option.value}
                   type="button"
                   aria-pressed={gender === option.value}
-                  onClick={() => setGender(gender === option.value ? "" : option.value)}
+                  onClick={() => setGender(option.value)}
                   className={cn(
                     "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
                     gender === option.value
@@ -114,15 +112,12 @@ export function WelcomeSetupDialog({
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
         </div>
-        <DialogFooter className="flex-row items-center justify-between sm:justify-between">
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Skip for now
-          </Button>
-          <Button size="sm" onClick={save} disabled={isPending}>
+        <AlertDialogFooter>
+          <Button onClick={save} disabled={isPending || !canContinue} className="w-full">
             {isPending ? "Saving…" : "Continue"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

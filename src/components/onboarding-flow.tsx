@@ -196,12 +196,24 @@ export function OnboardingFlow({
   // whether it was ever explicitly skipped.
   const habitCreated = steps.find((s) => s.id === "habit")?.done ?? false;
 
-  function dismissWelcomeSetup() {
+  // Welcome setup can't be skipped (see welcome-setup-dialog.tsx), so this
+  // only ever runs on a successful save — which is also the one true
+  // "new user" signal, so it forces the tour and the checklist behind it to
+  // run next even if this browser/account happened to have them dismissed
+  // already from unrelated earlier use (testing, a previous account, etc).
+  function completeWelcomeSetup() {
     setWelcomeSetupClosedNow(true);
+    setTourClosedNow(false);
+    setTourPersistedDismissed(false);
+    setChecklistClosedNow(false);
+    setChecklistPersistedDismissed(false);
     try {
       sessionStorage.setItem(WELCOME_SETUP_SESSION_KEY, "1");
+      localStorage.removeItem(TOUR_DISMISS_KEY);
+      sessionStorage.removeItem(CHECKLIST_SESSION_KEY);
     } catch {
-      // Storage unavailable — dismissal just won't persist for this session.
+      // Storage unavailable — none of this persists, but the in-memory
+      // state above still makes the tour and checklist show for this visit.
     }
   }
 
@@ -264,11 +276,7 @@ export function OnboardingFlow({
 
   return (
     <>
-      <WelcomeSetupDialog
-        open={showWelcomeSetup}
-        onOpenChange={(next) => (!next ? dismissWelcomeSetup() : undefined)}
-        onSaved={dismissWelcomeSetup}
-      />
+      <WelcomeSetupDialog open={showWelcomeSetup} onSaved={completeWelcomeSetup} />
 
       <Dialog open={showTour} onOpenChange={(next) => (!next ? skipTour() : undefined)}>
         <DialogContent className="sm:max-w-md">
