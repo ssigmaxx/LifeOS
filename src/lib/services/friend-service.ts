@@ -66,8 +66,42 @@ export async function getPendingFriendRequestCount(): Promise<number> {
   return count ?? 0;
 }
 
+// find_user_id_by_email lets any authenticated user learn whether an
+// arbitrary email has an account here (a non-null return means yes) — with
+// no limit, that's a cheap way to enumerate the user base. Counting attempts
+// (successful or not) in friend_lookup_attempts closes that off, same
+// Postgres-backed-counter approach as lib/ai/rate-limit.ts.
+const FRIEND_LOOKUP_MAX_PER_MINUTE = 5;
+const FRIEND_LOOKUP_MAX_PER_DAY = 20;
+
 export async function sendFriendRequest(email: string): Promise<void> {
   const { supabase, userId } = await requireUserId();
+
+  const oneMinuteAgo = new Date(Date.now() - 60_000).toISOString();
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const [{ count: minuteCount, error: minuteError }, { count: dayCount, error: dayError }] = await Promise.all([
+    supabase
+      .from("friend_lookup_attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("attempted_at", oneMinuteAgo),
+    supabase
+      .from("friend_lookup_attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("attempted_at", oneDayAgo),
+  ]);
+  if (minuteError) throw minuteError;
+  if (dayError) throw dayError;
+  if ((minuteCount ?? 0) >= FRIEND_LOOKUP_MAX_PER_MINUTE) {
+    throw new Error("Too many attempts — try again in a minute.");
+  }
+  if ((dayCount ?? 0) >= FRIEND_LOOKUP_MAX_PER_DAY) {
+    throw new Error("You've hit today's limit for friend requests. Try again tomorrow.");
+  }
+
+  const { error: attemptError } = await supabase.from("friend_lookup_attempts").insert({ user_id: userId });
+  if (attemptError) throw attemptError;
 
   const { data: friendId, error: lookupError } = await supabase.rpc("find_user_id_by_email", {
     lookup_email: email,
