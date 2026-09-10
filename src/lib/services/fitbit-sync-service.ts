@@ -16,11 +16,8 @@ type FitbitConnectionRow = {
   expires_at: string;
 };
 
-function civilDate(d: Date) {
-  return {
-    date: { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() },
-    time: { hours: 0, minutes: 0 },
-  };
+function dayBoundaryIso(d: Date) {
+  return `${isoDate(d)}T00:00:00Z`;
 }
 
 function isoDate(d: Date) {
@@ -36,7 +33,7 @@ async function fetchDailyRollup(accessToken: string, dataType: string, start: Da
       Accept: "application/json",
     },
     body: JSON.stringify({
-      range: { civilStartTime: civilDate(start), civilEndTime: civilDate(end) },
+      range: { startTime: dayBoundaryIso(start), endTime: dayBoundaryIso(end) },
       windowSizeDays: 1,
     }),
   });
