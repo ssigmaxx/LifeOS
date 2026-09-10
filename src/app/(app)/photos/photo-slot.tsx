@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { Camera, Trash2, X } from "lucide-react";
+import { Camera, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,8 +19,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { PhotoType } from "@/lib/services/photo-service";
 import { deletePhotoAction, getFullPhotoUrlAction, uploadPhotoAction, type FormActionState } from "./actions";
+import { CameraCaptureDialog } from "./camera-capture-dialog";
 
 const initialState: FormActionState = { error: null };
 
@@ -42,8 +49,18 @@ export function PhotoSlot({
   const [state, formAction, isPending] = useActionState(uploadPhotoAction, initialState);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [fullUrl, setFullUrl] = useState<string | null>(null);
   const [loadingFull, setLoadingFull] = useState(false);
+
+  function handleCaptured(file: File) {
+    const input = fileInputRef.current;
+    if (!input) return;
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    input.files = dataTransfer.files;
+    formRef.current?.requestSubmit();
+  }
 
   async function openViewer() {
     if (!photoId) return;
@@ -91,15 +108,28 @@ export function PhotoSlot({
           </button>
         </div>
       ) : (
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={() => fileInputRef.current?.click()}
-          className="flex size-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-muted-foreground hover:bg-accent"
-        >
-          <Camera className="size-5" />
-          <span className="text-[10px]">{isPending ? "Uploading…" : "Add"}</span>
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button
+                type="button"
+                disabled={isPending}
+                className="flex size-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-muted-foreground hover:bg-accent"
+              />
+            }
+          >
+            <Camera className="size-5" />
+            <span className="text-[10px]">{isPending ? "Uploading…" : "Add"}</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+              <Upload className="size-4" /> Upload from device
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setCameraOpen(true)}>
+              <Camera className="size-4" /> Take a photo
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
       <span className="text-xs text-muted-foreground">{label}</span>
       {state.error ? <p className="text-xs text-destructive">{state.error}</p> : null}
@@ -152,6 +182,8 @@ export function PhotoSlot({
           </Button>
         </DialogContent>
       </Dialog>
+
+      <CameraCaptureDialog open={cameraOpen} onOpenChange={setCameraOpen} onCapture={handleCaptured} />
     </div>
   );
 }

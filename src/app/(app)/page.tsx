@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Flame } from "lucide-react";
+import { ArrowRight, Flame, Users } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -11,6 +11,7 @@ import { getDailyScoreSeries, resolveRange } from "@/lib/services/analytics-serv
 import { getDailyTotals, getNutritionProfile } from "@/lib/services/nutrition-service";
 import { getTodosDueOnDate } from "@/lib/services/todo-service";
 import { getProfile } from "@/lib/services/profile-service";
+import { getPendingFriendRequestCount } from "@/lib/services/friend-service";
 import { getRandomQuote } from "@/lib/quotes";
 import { summarizeHealthMetrics } from "@/lib/health-summary";
 import { isFitbitConnected } from "@/lib/services/fitbit-service";
@@ -42,6 +43,7 @@ export default async function DashboardPage({
     profile,
     fitbitConnected,
     healthMetrics,
+    pendingFriendRequestCount,
   ] = await Promise.all([
       listHabits(),
       getTodayLogs(),
@@ -62,6 +64,7 @@ export default async function DashboardPage({
       })),
       isFitbitConnected().catch(() => false),
       getRecentHealthMetrics(30).catch(() => []),
+      getPendingFriendRequestCount().catch(() => 0),
     ]);
   const summary = summarizeToday(habits, todayLogs, todosToday);
   const quote = getRandomQuote();
@@ -130,6 +133,27 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
       </Link>
+
+      {pendingFriendRequestCount > 0 ? (
+        <Link href="/friends" className="block">
+          <Card className="border-none bg-blue-500/10 transition-shadow hover:shadow-md">
+            <CardContent className="flex items-center justify-between gap-3 py-3">
+              <div className="flex items-center gap-3">
+                <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                  <Users className="size-4" />
+                  <span className="absolute -top-1 -right-1 flex min-w-4.5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                    {pendingFriendRequestCount > 9 ? "9+" : pendingFriendRequestCount}
+                  </span>
+                </span>
+                <p className="text-sm font-medium">
+                  {pendingFriendRequestCount} pending friend request{pendingFriendRequestCount > 1 ? "s" : ""}
+                </p>
+              </div>
+              <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+      ) : null}
 
       {healthSummary ? <HealthSummaryCard summary={healthSummary} /> : null}
 
