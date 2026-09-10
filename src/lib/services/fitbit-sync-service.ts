@@ -26,10 +26,6 @@ function civilDateTime(d: Date) {
   return { date: { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() } };
 }
 
-function isoDate(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
-
 async function fetchDailyRollup(accessToken: string, dataType: string, start: Date, end: Date) {
   const response = await fetch(`${HEALTH_API_BASE}/${dataType}/dataPoints:dailyRollUp`, {
     method: "POST",
@@ -52,9 +48,13 @@ async function fetchDailyRollup(accessToken: string, dataType: string, start: Da
 
 async function fetchSleepList(accessToken: string, start: Date, end: Date) {
   const url = new URL(`${HEALTH_API_BASE}/sleep/dataPoints`);
+  // Confirmed against the same client's DataType registration for sleep:
+  // the filterable member is interval.start_time (plain UTC, "Z" suffix),
+  // not interval.civil_start_time — that one's rejected with
+  // INVALID_DATA_POINT_FILTER_DATA_TYPE_MEMBER.
   url.searchParams.set(
     "filter",
-    `sleep.interval.civil_start_time >= "${isoDate(start)}T00:00:00" AND sleep.interval.civil_start_time < "${isoDate(end)}T00:00:00"`,
+    `sleep.interval.start_time >= "${start.toISOString()}" AND sleep.interval.start_time < "${end.toISOString()}"`,
   );
   url.searchParams.set("pageSize", "50");
   const response = await fetch(url, {
