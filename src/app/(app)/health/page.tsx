@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { StatTileRow, type StatTileData } from "@/components/stat-tile";
 import { formatMinutes } from "@/lib/format";
 import { isFitbitConnected } from "@/lib/services/fitbit-service";
-import { getLatestRawSync, getRecentHealthMetrics } from "@/lib/services/health-service";
+import { getRecentHealthMetrics } from "@/lib/services/health-service";
 import { SyncNowButton } from "./sync-now-button";
 
 const RANGE_DAYS = 14;
@@ -35,16 +35,30 @@ export default async function HealthPage() {
   }
 
   const metrics = await getRecentHealthMetrics(RANGE_DAYS).catch(() => []);
-  const latest = metrics[0] ?? null;
-  const latestRaw = await getLatestRawSync().catch(() => null);
+  // Google's daily rollup only ever covers completed civil days — "today"
+  // has no data until it's over, so this picks the most recent day that
+  // actually has each metric rather than mislabeling yesterday's number
+  // as today's.
+  const latestSteps = metrics.find((m) => m.steps != null);
+  const latestHeartRate = metrics.find((m) => m.restingHeartRate != null);
+  const latestSleep = metrics.find((m) => m.sleepMinutes != null);
 
   const tiles: StatTileData[] = [
-    { label: "Steps today", value: latest?.steps != null ? latest.steps.toLocaleString() : "—" },
+    {
+      label: "Steps",
+      value: latestSteps ? latestSteps.steps!.toLocaleString() : "—",
+      hint: latestSteps?.date,
+    },
     {
       label: "Resting heart rate",
-      value: latest?.restingHeartRate != null ? `${latest.restingHeartRate} bpm` : "—",
+      value: latestHeartRate ? `${latestHeartRate.restingHeartRate} bpm` : "—",
+      hint: latestHeartRate?.date,
     },
-    { label: "Sleep", value: latest?.sleepMinutes != null ? formatMinutes(latest.sleepMinutes) : "—" },
+    {
+      label: "Sleep",
+      value: latestSleep ? formatMinutes(latestSleep.sleepMinutes!) : "—",
+      hint: latestSleep?.date,
+    },
   ];
 
   return (
@@ -100,23 +114,6 @@ export default async function HealthPage() {
           )}
         </CardContent>
       </Card>
-
-      {latestRaw ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Raw sync data (debug)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-2 text-xs text-muted-foreground">
-              Last synced day: {latestRaw.date}. Temporary — this is what Google actually returned, kept
-              here to fix field-name mapping without another live sync.
-            </p>
-            <pre className="max-h-96 overflow-auto rounded-lg bg-muted p-3 text-xs">
-              {JSON.stringify(latestRaw.raw, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   );
 }
