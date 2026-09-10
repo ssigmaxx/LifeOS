@@ -153,13 +153,30 @@ export function OnboardingFlow({ steps }: { steps: OnboardingStep[] }) {
   // whether it was ever explicitly skipped.
   const habitCreated = steps.find((s) => s.id === "habit")?.done ?? false;
 
-  function dismissTour() {
+  function persistTourDismissed() {
     setTourClosedNow(true);
     try {
       localStorage.setItem(TOUR_DISMISS_KEY, "1");
     } catch {
       // Storage unavailable (private browsing, etc.) — dismissal just won't persist.
     }
+  }
+
+  // Skipping or closing early reads as "stop showing me onboarding stuff" —
+  // if the checklist popped up immediately in the tour's place, closing the
+  // tour would look like it did nothing (a different box just replaced it
+  // in the same spot). So skip suppresses the checklist for this session
+  // too; it still comes back on the next login if a habit still doesn't
+  // exist by then, same as if it had been skipped on its own.
+  function skipTour() {
+    persistTourDismissed();
+    dismissChecklist();
+  }
+
+  // Reaching the end normally (not skipping) is the one case where
+  // chaining straight into the checklist is the intended, expected flow.
+  function finishTour() {
+    persistTourDismissed();
   }
 
   function dismissChecklist() {
@@ -172,7 +189,12 @@ export function OnboardingFlow({ steps }: { steps: OnboardingStep[] }) {
   }
 
   // showChecklist requires !showTour so the two dialogs can never both be
-  // open — see the getSnapshot comment above for why that matters.
+  // open — see the getSnapshot comment above for why that matters. They're
+  // also never both *mounted*: each Dialog below is only instantiated at
+  // all while its own flag is true (rather than always-mounted with
+  // open={false}), so there's no chance of a closing dialog's portal
+  // overlay lingering in the DOM and intercepting clicks meant for the
+  // other one.
   const showTour = !tourDismissed;
   const showChecklist = !showTour && !habitCreated && !checklistDismissedThisSession;
 
@@ -182,85 +204,89 @@ export function OnboardingFlow({ steps }: { steps: OnboardingStep[] }) {
 
   return (
     <>
-      <Dialog open={showTour} onOpenChange={(next) => (!next ? dismissTour() : undefined)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <SlideIcon className="size-5" />
-            </div>
-            <DialogTitle>{slide.title}</DialogTitle>
-            <DialogDescription>{slide.description}</DialogDescription>
-          </DialogHeader>
+      {showTour ? (
+        <Dialog open onOpenChange={(next) => (!next ? skipTour() : undefined)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <SlideIcon className="size-5" />
+              </div>
+              <DialogTitle>{slide.title}</DialogTitle>
+              <DialogDescription>{slide.description}</DialogDescription>
+            </DialogHeader>
 
-          <div className="flex items-center justify-center gap-1.5 py-1">
-            {SLIDES.map((s, i) => (
-              <span
-                key={s.title}
-                className={cn(
-                  "h-1.5 rounded-full transition-all",
-                  i === tourStep ? "w-4 bg-primary" : "w-1.5 bg-muted",
-                )}
-              />
-            ))}
-          </div>
-
-          <DialogFooter className="flex-row items-center justify-between sm:justify-between">
-            <Button variant="ghost" size="sm" onClick={dismissTour}>
-              Skip tour
-            </Button>
-            <div className="flex items-center gap-2">
-              {tourStep > 0 ? (
-                <Button variant="outline" size="sm" onClick={() => setTourStep((s) => s - 1)}>
-                  <ArrowLeft className="size-4" /> Back
-                </Button>
-              ) : null}
-              {isLastSlide ? (
-                <Button size="sm" onClick={dismissTour}>
-                  Get started
-                </Button>
-              ) : (
-                <Button size="sm" onClick={() => setTourStep((s) => s + 1)}>
-                  Next <ArrowRight className="size-4" />
-                </Button>
-              )}
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showChecklist} onOpenChange={(next) => (!next ? dismissChecklist() : undefined)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Get set up</DialogTitle>
-            <DialogDescription>A few quick steps to get started.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-1">
-            {steps.map((step) => (
-              <Link
-                key={step.id}
-                href={step.href}
-                onClick={dismissChecklist}
-                className="flex items-center gap-2.5 rounded-md px-1.5 py-1.5 text-sm transition-colors hover:bg-accent"
-              >
+            <div className="flex items-center justify-center gap-1.5 py-1">
+              {SLIDES.map((s, i) => (
                 <span
+                  key={s.title}
                   className={cn(
-                    "flex size-5 shrink-0 items-center justify-center rounded-full border",
-                    step.done ? "border-primary bg-primary text-primary-foreground" : "border-input",
+                    "h-1.5 rounded-full transition-all",
+                    i === tourStep ? "w-4 bg-primary" : "w-1.5 bg-muted",
                   )}
+                />
+              ))}
+            </div>
+
+            <DialogFooter className="flex-row items-center justify-between sm:justify-between">
+              <Button variant="ghost" size="sm" onClick={skipTour}>
+                Skip tour
+              </Button>
+              <div className="flex items-center gap-2">
+                {tourStep > 0 ? (
+                  <Button variant="outline" size="sm" onClick={() => setTourStep((s) => s - 1)}>
+                    <ArrowLeft className="size-4" /> Back
+                  </Button>
+                ) : null}
+                {isLastSlide ? (
+                  <Button size="sm" onClick={finishTour}>
+                    Get started
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => setTourStep((s) => s + 1)}>
+                    Next <ArrowRight className="size-4" />
+                  </Button>
+                )}
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+
+      {showChecklist ? (
+        <Dialog open onOpenChange={(next) => (!next ? dismissChecklist() : undefined)}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Get set up</DialogTitle>
+              <DialogDescription>A few quick steps to get started.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-1">
+              {steps.map((step) => (
+                <Link
+                  key={step.id}
+                  href={step.href}
+                  onClick={dismissChecklist}
+                  className="flex items-center gap-2.5 rounded-md px-1.5 py-1.5 text-sm transition-colors hover:bg-accent"
                 >
-                  {step.done ? <Check className="size-3" /> : null}
-                </span>
-                <span className={cn(step.done && "text-muted-foreground line-through")}>{step.label}</span>
-              </Link>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={dismissChecklist}>
-              Skip for now
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                  <span
+                    className={cn(
+                      "flex size-5 shrink-0 items-center justify-center rounded-full border",
+                      step.done ? "border-primary bg-primary text-primary-foreground" : "border-input",
+                    )}
+                  >
+                    {step.done ? <Check className="size-3" /> : null}
+                  </span>
+                  <span className={cn(step.done && "text-muted-foreground line-through")}>{step.label}</span>
+                </Link>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={dismissChecklist}>
+                Skip for now
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </>
   );
 }
