@@ -1,30 +1,42 @@
 "use client";
 
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { formatMinutes } from "@/lib/format";
 
 function formatDateShort(dateISO: string) {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function formatSteps(value: number) {
+  return value >= 1000 ? `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k` : String(value);
+}
+
+type Metric = "steps" | "sleep" | "heartRate";
+
+// Formatters live here (inside the client boundary) rather than being
+// passed in as props from the server-rendered page — a plain function
+// can't cross the server/client component boundary as a prop, only
+// serializable values like this metric key can.
+const METRIC_CONFIG: Record<Metric, { unitLabel: string; formatValue: (v: number) => string; formatAxis: (v: number) => string }> = {
+  steps: { unitLabel: "Steps", formatValue: (v) => v.toLocaleString(), formatAxis: formatSteps },
+  sleep: { unitLabel: "Sleep", formatValue: formatMinutes, formatAxis: (v) => `${Math.round(v / 60)}h` },
+  heartRate: { unitLabel: "Resting HR", formatValue: (v) => `${v} bpm`, formatAxis: (v) => String(v) },
+};
+
 export function TrendChart({
   points,
+  metric,
   color,
-  unitLabel,
-  formatValue,
-  formatAxis,
   emptyMessage = "Not enough synced data yet for a trend.",
 }: {
   points: { date: string; value: number | null }[];
+  metric: Metric;
   /** CSS color for the bars/line — one metric per chart (no dual axis). */
   color: string;
-  /** Series name shown in the tooltip, e.g. "Steps", "Sleep", "Resting HR". */
-  unitLabel: string;
-  /** Full value for the tooltip, e.g. "10,610" or "6h 24m". */
-  formatValue: (value: number) => string;
-  /** Compact value for the Y axis ticks — defaults to the raw number. */
-  formatAxis?: (value: number) => string;
   emptyMessage?: string;
 }) {
+  const { unitLabel, formatValue, formatAxis } = METRIC_CONFIG[metric];
+
   const hasData = points.some((p) => p.value != null);
   if (!hasData) {
     return <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">{emptyMessage}</div>;
@@ -45,7 +57,7 @@ export function TrendChart({
         <ComposedChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" minTickGap={24} />
-          <YAxis tick={{ fontSize: 11 }} tickFormatter={formatAxis ?? String} width={44} />
+          <YAxis tick={{ fontSize: 11 }} tickFormatter={formatAxis} width={44} />
           <Tooltip
             labelFormatter={(label) => label}
             formatter={(value, name) => [

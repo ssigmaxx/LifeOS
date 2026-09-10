@@ -182,13 +182,7 @@ export default async function HealthPage() {
             <CardTitle>Steps</CardTitle>
           </CardHeader>
           <CardContent>
-            <TrendChart
-              points={stepsPoints}
-              color="var(--health-steps)"
-              unitLabel="Steps"
-              formatValue={(v) => v.toLocaleString()}
-              formatAxis={(v) => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k` : String(v))}
-            />
+            <TrendChart points={stepsPoints} metric="steps" color="var(--health-steps)" />
           </CardContent>
         </Card>
 
@@ -197,13 +191,7 @@ export default async function HealthPage() {
             <CardTitle>Sleep</CardTitle>
           </CardHeader>
           <CardContent>
-            <TrendChart
-              points={sleepPoints}
-              color="var(--health-sleep)"
-              unitLabel="Sleep"
-              formatValue={formatMinutes}
-              formatAxis={(v) => `${Math.round(v / 60)}h`}
-            />
+            <TrendChart points={sleepPoints} metric="sleep" color="var(--health-sleep)" />
           </CardContent>
         </Card>
 
@@ -212,13 +200,7 @@ export default async function HealthPage() {
             <CardTitle>Resting heart rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <TrendChart
-              points={heartRatePoints}
-              color="var(--health-heart)"
-              unitLabel="Resting HR"
-              formatValue={(v) => `${v} bpm`}
-              formatAxis={(v) => String(v)}
-            />
+            <TrendChart points={heartRatePoints} metric="heartRate" color="var(--health-heart)" />
           </CardContent>
         </Card>
       </div>
