@@ -48,7 +48,7 @@ export function AppShell({
             <header className="flex h-14 items-center justify-between gap-2 border-b px-4 md:hidden">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-5 text-primary" />
-                <span className="font-semibold tracking-tight">LifeOS</span>
+                <span className="font-semibold tracking-tight">Meridian</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <LanguageSwitcher locale={locale} className="h-8 w-auto gap-1 px-2 text-xs" />

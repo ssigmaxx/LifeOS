@@ -19,7 +19,7 @@ import "server-only";
 // countries_tags:"en:germany" stores:"Rewe") rather than passed as their
 // own params — those aren't recognized as separate query params here.
 const SEARCH_URL = "https://search.openfoodfacts.org/search";
-const USER_AGENT = "LifeOS-NutritionTracker/1.0 (personal use; not for redistribution)";
+const USER_AGENT = "Meridian-NutritionTracker/1.0 (personal use; not for redistribution)";
 
 // Community-contributed `stores` tagging is sparse — most products have
 // none at all — so a store filter that returns nothing falls back to an

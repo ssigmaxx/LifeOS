@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "LifeOS",
-    short_name: "LifeOS",
+    name: "Meridian",
+    short_name: "Meridian",
     description: "Your private personal operating system for habits, health, and reflection.",
     start_url: "/",
     display: "standalone",

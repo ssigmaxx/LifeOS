@@ -10,7 +10,7 @@
 // untouched, so there is no risk of serving stale or private data from
 // the cache. Bump CACHE_NAME to invalidate the (tiny) precache on deploy.
 
-const CACHE_NAME = "lifeos-shell-v1";
+const CACHE_NAME = "meridian-shell-v1";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -45,7 +45,7 @@ self.addEventListener("fetch", (event) => {
 // see src/lib/notifications/push.ts. Falls back to a generic notification
 // if the payload is missing or malformed so a push never silently no-ops.
 self.addEventListener("push", (event) => {
-  let payload = { title: "LifeOS", body: "You have a new update.", url: "/" };
+  let payload = { title: "Meridian", body: "You have a new update.", url: "/" };
   try {
     if (event.data) payload = { ...payload, ...event.data.json() };
   } catch {

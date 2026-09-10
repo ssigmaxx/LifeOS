@@ -1,4 +1,4 @@
-// Minimal RFC 5545 (iCalendar) parser, scoped to exactly what LifeOS needs:
+// Minimal RFC 5545 (iCalendar) parser, scoped to exactly what Meridian needs:
 // VEVENT title/description/location/start/end (including all-day
 // VALUE=DATE events) and RRULE recurrence limited to FREQ=WEEKLY. This is
 // deliberately not a general-purpose ICS library — no VTIMEZONE

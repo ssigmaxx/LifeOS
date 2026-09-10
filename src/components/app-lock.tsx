@@ -158,7 +158,7 @@ export function AppLockProvider({ lockEnabled, children }: { lockEnabled: boolea
             <Lock className="size-6" />
           </div>
           <div className="text-center">
-            <h1 className="text-lg font-semibold">LifeOS is locked</h1>
+            <h1 className="text-lg font-semibold">Meridian is locked</h1>
             <p className="text-sm text-muted-foreground">Enter your 4-digit PIN to continue.</p>
           </div>
           <form onSubmit={submitPin} className="flex flex-col items-center gap-3">

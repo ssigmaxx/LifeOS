@@ -51,7 +51,7 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Help</CardTitle>
-          <CardDescription>Revisit the guided tour of LifeOS&apos;s features.</CardDescription>
+          <CardDescription>Revisit the guided tour of Meridian&apos;s features.</CardDescription>
         </CardHeader>
         <CardContent>
           <ReplayTourButton />

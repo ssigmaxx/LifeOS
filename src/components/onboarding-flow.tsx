@@ -42,7 +42,7 @@ type Slide = { title: string; description: string; href: string; icon: LucideIco
 // describes, so "explore it now" is one click away.
 const SLIDES: Slide[] = [
   {
-    title: "Welcome to LifeOS",
+    title: "Welcome to Meridian",
     description:
       "A quick tour of what's here — nine short stops, then you're set. You can reopen this anytime from Settings.",
     href: "/",

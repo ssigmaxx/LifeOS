@@ -17,12 +17,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LifeOS",
+  title: "Meridian",
   description: "Your private personal operating system.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "LifeOS",
+    title: "Meridian",
   },
 };
 

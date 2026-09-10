@@ -42,7 +42,7 @@ export function LockSettingsForm({ initialEnabled }: { initialEnabled: boolean }
       setEnabled(true);
       setPin("");
       setConfirmPin("");
-      setNotice("Screen lock is on. You'll need this PIN to unlock LifeOS.");
+      setNotice("Screen lock is on. You'll need this PIN to unlock Meridian.");
       // The lock gate wrapping the whole app reads this from the layout —
       // refresh so it picks up the change without needing a full reload.
       router.refresh();
@@ -70,8 +70,8 @@ export function LockSettingsForm({ initialEnabled }: { initialEnabled: boolean }
         <CardTitle>Screen lock</CardTitle>
         <CardDescription>
           {enabled
-            ? "A 4-digit PIN protects LifeOS on this device — it locks automatically after 7 minutes of inactivity, or you can lock it instantly from the sidebar."
-            : "Set a 4-digit PIN to lock LifeOS instead of logging out when you step away. Locks automatically after 7 minutes of inactivity."}
+            ? "A 4-digit PIN protects Meridian on this device — it locks automatically after 7 minutes of inactivity, or you can lock it instantly from the sidebar."
+            : "Set a 4-digit PIN to lock Meridian instead of logging out when you step away. Locks automatically after 7 minutes of inactivity."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -55,7 +55,7 @@ export async function sendMessageAction(
   if (process.env.AI_ENABLED !== "true") {
     return {
       ...emptyResult,
-      error: "AI Coach is temporarily unavailable. Your tracking data is safe and the rest of LifeOS is still available.",
+      error: "AI Coach is temporarily unavailable. Your tracking data is safe and the rest of Meridian is still available.",
     };
   }
 
@@ -76,7 +76,7 @@ export async function sendMessageAction(
       conversationId: convoId,
       text: "",
       proposals: [],
-      error: "AI Coach is temporarily unavailable. Your tracking data is safe and the rest of LifeOS is still available.",
+      error: "AI Coach is temporarily unavailable. Your tracking data is safe and the rest of Meridian is still available.",
     };
   }
 

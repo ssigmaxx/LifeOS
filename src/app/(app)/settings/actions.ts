@@ -56,7 +56,7 @@ export async function sendTestNotificationAction(): Promise<ActionResult> {
   const results = await Promise.all(
     subs.map((sub) =>
       sendPushNotification(sub, {
-        title: "LifeOS",
+        title: "Meridian",
         body: "Test notification — push is working.",
         url: "/settings",
       }),

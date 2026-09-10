@@ -160,7 +160,7 @@ export async function GET(request: Request) {
         subs.map((sub) =>
           sendPushNotification(
             { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth_key },
-            { title: "LifeOS", body: message, url: URL_BY_KIND[kind] },
+            { title: "Meridian", body: message, url: URL_BY_KIND[kind] },
           ),
         ),
       );

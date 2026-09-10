@@ -83,7 +83,7 @@ export async function GET(request: Request) {
       return new NextResponse(sections.join("\n"), {
         headers: {
           "Content-Type": "text/csv",
-          "Content-Disposition": `attachment; filename="lifeos-export-${datePart}.csv"`,
+          "Content-Disposition": `attachment; filename="meridian-export-${datePart}.csv"`,
         },
       });
     }
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
     return new NextResponse(JSON.stringify(payload, null, 2), {
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="lifeos-export-${datePart}.json"`,
+        "Content-Disposition": `attachment; filename="meridian-export-${datePart}.json"`,
       },
     });
   } catch (err) {

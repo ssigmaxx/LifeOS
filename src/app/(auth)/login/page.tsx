@@ -13,7 +13,7 @@ export default async function LoginPage({
     <Card>
       <CardHeader>
         <CardTitle>Log in</CardTitle>
-        <CardDescription>Welcome back to your private LifeOS.</CardDescription>
+        <CardDescription>Welcome back to your private Meridian.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error ? (
