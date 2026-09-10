@@ -10,6 +10,8 @@ import { listGoals } from "@/lib/services/goal-service";
 import { getDailyScoreSeries, resolveRange } from "@/lib/services/analytics-service";
 import { getDailyTotals, getNutritionProfile } from "@/lib/services/nutrition-service";
 import { getTodosDueOnDate } from "@/lib/services/todo-service";
+import { getProfile } from "@/lib/services/profile-service";
+import { getRandomQuote } from "@/lib/quotes";
 import { OnboardingFlow, type OnboardingStep } from "@/components/onboarding-flow";
 import { ScoreTrendChart } from "./analytics/score-trend-chart";
 import { NutritionCard } from "./today/nutrition-card";
@@ -25,16 +27,28 @@ export default async function DashboardPage({
   // listHabits() is fetched once and reused for both the streak list below
   // and today's summary (via summarizeToday) — today-service's own
   // getTodaySummary() would call listHabits() a second time internally.
-  const [habits, todayLogs, todosToday, goals, trend, nutritionProfile, nutritionTotals] = await Promise.all([
-    listHabits(),
-    getTodayLogs(),
-    getTodosDueOnDate(),
-    listGoals(),
-    getDailyScoreSeries(resolveRange("7d")),
-    getNutritionProfile(),
-    getDailyTotals(),
-  ]);
+  const [habits, todayLogs, todosToday, goals, trend, nutritionProfile, nutritionTotals, profile] =
+    await Promise.all([
+      listHabits(),
+      getTodayLogs(),
+      getTodosDueOnDate(),
+      listGoals(),
+      getDailyScoreSeries(resolveRange("7d")),
+      getNutritionProfile(),
+      getDailyTotals(),
+      // Falls back instead of throwing, same as (app)/layout.tsx's own
+      // getProfile() call — a missing name shouldn't take down the
+      // dashboard, the highest-traffic page in the app.
+      getProfile().catch(() => ({
+        displayName: null,
+        avatarIcon: null,
+        birthDate: null,
+        gender: null,
+        email: "",
+      })),
+    ]);
   const summary = summarizeToday(habits, todayLogs, todosToday);
+  const quote = getRandomQuote();
 
   const scorePct = summary.score != null ? Math.round(summary.score * 100) : null;
   const activeStreaks = habits
@@ -52,11 +66,20 @@ export default async function DashboardPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {profile.displayName ? `Welcome back, ${profile.displayName}!` : "Welcome back!"}
+        </h1>
         <p className="text-sm text-muted-foreground">
           Your at-a-glance overview of habits, streaks, and recent trends.
         </p>
       </div>
+
+      <Card className="border-none bg-primary/5">
+        <CardContent className="py-3">
+          <p className="text-sm italic text-foreground">&ldquo;{quote.text}&rdquo;</p>
+          <p className="mt-1 text-right text-xs text-muted-foreground">— {quote.author}</p>
+        </CardContent>
+      </Card>
 
       {confirmed ? (
         <p role="status" className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
