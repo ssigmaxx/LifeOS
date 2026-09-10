@@ -162,23 +162,31 @@ async function syncOneConnection(row: FitbitConnectionRow) {
   for (const point of sleepPoints) {
     // Confirmed against a real response: the whole session is nested one
     // level under "sleep" (point.sleep.interval / point.sleep.summary),
-    // not flat on the point itself — and the interval uses a plain UTC
-    // startTime string, not a civil date object.
+    // not flat on the point itself.
     const record = point as Record<string, unknown>;
     const sleep = record.sleep as Record<string, unknown> | undefined;
+    const metadata = sleep?.metadata as Record<string, unknown> | undefined;
+    // Naps and other fragments are excluded — only the flagged primary
+    // session counts as "sleep" for the day, same as what a sleep-tracking
+    // app's own daily total means.
+    if (metadata?.mainSleep !== true) continue;
+
+    // Bucketing by *end* time (wake-up date), not start time: a session
+    // starting late one night and one ending early the next morning can
+    // both fall on the same calendar date by start time, which was
+    // previously summing two different nights' sleep into one inflated
+    // total (e.g. a 6h24m + 4h06m pair showing as 10h30m). Wake-up date is
+    // also the conventional way sleep apps label "last night's sleep."
     const interval = sleep?.interval as Record<string, unknown> | undefined;
-    const startTime = interval?.startTime;
-    const date = typeof startTime === "string" ? startTime.slice(0, 10) : null;
+    const endTime = interval?.endTime;
+    const date = typeof endTime === "string" ? endTime.slice(0, 10) : null;
     if (!date || date < startDate || date > endDate) continue;
+
     const summary = sleep?.summary as Record<string, unknown> | undefined;
     const durationMinutes = pickNumber(summary, ["minutesAsleep"]);
     const entry = entryFor(date);
-    // Sum rather than overwrite — a night can have more than one sleep
-    // session (a nap plus the main sleep), all landing on the same date.
-    if (durationMinutes !== null) {
-      entry.sleepMinutes = (entry.sleepMinutes ?? 0) + durationMinutes;
-    }
-    entry.raw.sleep = [...((entry.raw.sleep as unknown[]) ?? []), point];
+    entry.sleepMinutes = durationMinutes;
+    entry.raw.sleep = point;
   }
 
   const rows = Array.from(byDate.entries()).map(([date, entry]) => ({
