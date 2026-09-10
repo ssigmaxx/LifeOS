@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { deleteOwnAccount } from "@/lib/services/account-service";
 import {
   listOwnPushSubscriptions,
   removePushSubscription,
@@ -114,6 +116,18 @@ export async function updateOwnPasswordAction(values: {
     return { error: error.message };
   }
   return { error: null };
+}
+
+// redirect() throws internally — must stay outside the try, same reasoning
+// as api/fitbit/callback/route.ts, or a successful deletion would get
+// caught here and reported back as a generic failure instead of redirecting.
+export async function deleteAccountAction(): Promise<ActionResult> {
+  try {
+    await deleteOwnAccount();
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to delete account." };
+  }
+  redirect("/login?deleted=1");
 }
 
 export async function disconnectFitbitAction(): Promise<ActionResult> {

@@ -11,6 +11,7 @@ import { PasswordForm } from "./password-form";
 import { LockSettingsForm } from "./lock-settings-form";
 import { FitbitSettingsForm } from "./fitbit-settings-form";
 import { ReplayTourButton } from "./replay-tour-button";
+import { DeleteAccountForm } from "./delete-account-form";
 
 export default async function SettingsPage({
   searchParams,
@@ -66,6 +67,8 @@ export default async function SettingsPage({
           <ReplayTourButton />
         </CardContent>
       </Card>
+
+      <DeleteAccountForm email={profile.email} />
     </div>
   );
 }
