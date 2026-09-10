@@ -35,8 +35,17 @@ export function CameraCaptureDialog({
     setReady(false);
     setError(null);
 
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setError("Camera access requires a secure (https://) connection.");
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("This browser doesn't support camera capture.");
+      return;
+    }
+
     navigator.mediaDevices
-      ?.getUserMedia({ video: { facingMode }, audio: false })
+      .getUserMedia({ video: { facingMode }, audio: false })
       .then((stream) => {
         if (cancelled) {
           stream.getTracks().forEach((track) => track.stop());
@@ -46,8 +55,26 @@ export function CameraCaptureDialog({
         if (videoRef.current) videoRef.current.srcObject = stream;
         setReady(true);
       })
-      .catch(() => {
-        if (!cancelled) setError("Couldn't access your camera — check permissions and try again.");
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        // Surfacing the real DOMException name/message rather than one
+        // generic string — "permission denied," "no camera found," "camera
+        // in use by another app," and "insecure context" all need
+        // different fixes, and a flat message made this impossible to
+        // diagnose without guessing.
+        const name = err instanceof DOMException ? err.name : "Error";
+        const detail = err instanceof Error ? err.message : String(err);
+        const hint =
+          name === "NotAllowedError"
+            ? "Permission was denied — check your browser and OS camera settings for this site."
+            : name === "NotFoundError"
+              ? "No camera was found on this device."
+              : name === "NotReadableError"
+                ? "The camera is already in use by another app or browser tab."
+                : name === "OverconstrainedError"
+                  ? "This device doesn't have that camera — try switching camera."
+                  : detail || "Check permissions and try again.";
+        setError(`Couldn't access your camera (${name}): ${hint}`);
       });
 
     return () => {
