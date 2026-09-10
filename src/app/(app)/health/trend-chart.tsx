@@ -11,7 +11,7 @@ function formatSteps(value: number) {
   return value >= 1000 ? `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k` : String(value);
 }
 
-type Metric = "steps" | "sleep" | "heartRate" | "avgHeartRate" | "calories";
+type Metric = "steps" | "sleep" | "heartRate" | "avgHeartRate";
 
 // Formatters live here (inside the client boundary) rather than being
 // passed in as props from the server-rendered page — a plain function
@@ -22,7 +22,6 @@ const METRIC_CONFIG: Record<Metric, { unitLabel: string; formatValue: (v: number
   sleep: { unitLabel: "Sleep", formatValue: formatMinutes, formatAxis: (v) => `${Math.round(v / 60)}h` },
   heartRate: { unitLabel: "Resting HR", formatValue: (v) => `${v} bpm`, formatAxis: (v) => String(v) },
   avgHeartRate: { unitLabel: "Avg HR", formatValue: (v) => `${v} bpm`, formatAxis: (v) => String(v) },
-  calories: { unitLabel: "Calories", formatValue: (v) => `${v.toLocaleString()} kcal`, formatAxis: formatSteps },
 };
 
 export function TrendChart({

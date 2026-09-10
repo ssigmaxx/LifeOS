@@ -46,23 +46,6 @@ async function fetchDailyRollup(accessToken: string, dataType: string, start: Da
   return json.rollupDataPoints ?? [];
 }
 
-// The schema-cache error from the last attempt ("Could not find the
-// 'avg_heart_rate' column ... in the schema cache") was Supabase's
-// PostgREST layer serving a stale cache after the migration, not a real
-// API problem with calories — same activity_and_fitness scope as
-// steps, and the reload has since been triggered. Still isolated in its
-// own try/catch since it's the one call never confirmed against a live
-// response, so a genuine failure here shouldn't take steps/heart-rate/
-// sleep down with it.
-async function fetchCaloriesRollupSafe(accessToken: string, start: Date, end: Date) {
-  try {
-    return await fetchDailyRollup(accessToken, "total-calories", start, end);
-  } catch (err) {
-    console.error("[fitbit-sync] total-calories rollup failed, skipping calories for this sync:", err);
-    return [];
-  }
-}
-
 async function fetchSleepList(accessToken: string) {
   const url = new URL(`${HEALTH_API_BASE}/sleep/dataPoints`);
   // Both interval.civil_start_time and interval.start_time were rejected
@@ -133,10 +116,9 @@ async function syncOneConnection(row: FitbitConnectionRow) {
   const end = new Date();
   const start = new Date(end.getTime() - SYNC_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
-  const [stepsRollup, heartRateRollup, caloriesRollup, sleepPoints] = await Promise.all([
+  const [stepsRollup, heartRateRollup, sleepPoints] = await Promise.all([
     fetchDailyRollup(accessToken, "steps", start, end),
     fetchDailyRollup(accessToken, "heart-rate", start, end),
-    fetchCaloriesRollupSafe(accessToken, start, end),
     fetchSleepList(accessToken),
   ]);
 
@@ -146,7 +128,6 @@ async function syncOneConnection(row: FitbitConnectionRow) {
       steps: number | null;
       restingHeartRate: number | null;
       avgHeartRate: number | null;
-      caloriesBurned: number | null;
       sleepMinutes: number | null;
       raw: Record<string, unknown>;
     }
@@ -154,7 +135,7 @@ async function syncOneConnection(row: FitbitConnectionRow) {
   function entryFor(date: string) {
     let entry = byDate.get(date);
     if (!entry) {
-      entry = { steps: null, restingHeartRate: null, avgHeartRate: null, caloriesBurned: null, sleepMinutes: null, raw: {} };
+      entry = { steps: null, restingHeartRate: null, avgHeartRate: null, sleepMinutes: null, raw: {} };
       byDate.set(date, entry);
     }
     return entry;
@@ -184,18 +165,6 @@ async function syncOneConnection(row: FitbitConnectionRow) {
     entry.restingHeartRate = minBpm != null ? Math.round(minBpm) : null;
     entry.avgHeartRate = avgBpm != null ? Math.round(avgBpm) : null;
     entry.raw.heartRate = point;
-  }
-
-  for (const point of caloriesRollup) {
-    const date = rollupEntryDate(point);
-    if (!date) continue;
-    const record = point as Record<string, unknown>;
-    const entry = entryFor(date);
-    // Confirmed field name: totalCalories.kcalSum (same naming pattern as
-    // steps.countSum) — total-calories is basal + active energy combined.
-    const kcal = pickNumber(record.totalCalories, ["kcalSum"]);
-    entry.caloriesBurned = kcal != null ? Math.round(kcal) : null;
-    entry.raw.calories = point;
   }
 
   // fetchSleepList returns recent sessions unfiltered (see its comment) —
@@ -238,7 +207,6 @@ async function syncOneConnection(row: FitbitConnectionRow) {
     steps: entry.steps,
     resting_heart_rate: entry.restingHeartRate,
     avg_heart_rate: entry.avgHeartRate,
-    calories_burned: entry.caloriesBurned,
     sleep_minutes: entry.sleepMinutes,
     raw: entry.raw,
     synced_at: new Date().toISOString(),
