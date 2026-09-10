@@ -10,10 +10,9 @@ import { formatMinutes } from "@/lib/format";
 import { isFitbitConnected } from "@/lib/services/fitbit-service";
 import { getRecentHealthMetrics } from "@/lib/services/health-service";
 import { SyncNowButton } from "./sync-now-button";
-import { WeeklyTrendChart } from "./weekly-trend-chart";
+import { TrendChart } from "./trend-chart";
 
-const TABLE_DAYS = 14;
-const TREND_DAYS = 30;
+const DAYS = 30;
 const STEPS_TARGET = 10000;
 const SLEEP_TARGET_MINUTES = 480; // 8h
 
@@ -77,7 +76,7 @@ export default async function HealthPage() {
     );
   }
 
-  const metrics = await getRecentHealthMetrics(TREND_DAYS).catch(() => []);
+  const metrics = await getRecentHealthMetrics(DAYS).catch(() => []);
   // Google's daily rollup only ever covers completed civil days — "today"
   // has no data until it's over, so this picks the most recent day that
   // actually has each metric rather than mislabeling yesterday's number
@@ -85,9 +84,11 @@ export default async function HealthPage() {
   const latestSteps = metrics.find((m) => m.steps != null);
   const latestHeartRate = metrics.find((m) => m.restingHeartRate != null);
   const latestSleep = metrics.find((m) => m.sleepMinutes != null);
-  const tableRows = metrics.slice(0, TABLE_DAYS);
-  // WeeklyTrendChart wants oldest-first for a left-to-right timeline.
-  const trendPoints = [...metrics].reverse().map((m) => ({ date: m.date, steps: m.steps }));
+  // Charts want oldest-first for a left-to-right timeline.
+  const chronological = [...metrics].reverse();
+  const stepsPoints = chronological.map((m) => ({ date: m.date, value: m.steps }));
+  const sleepPoints = chronological.map((m) => ({ date: m.date, value: m.sleepMinutes }));
+  const heartRatePoints = chronological.map((m) => ({ date: m.date, value: m.restingHeartRate }));
 
   const stepsPct = latestSteps?.steps != null ? Math.min(latestSteps.steps / STEPS_TARGET, 1) : 0;
   const sleepPct = latestSleep?.sleepMinutes != null ? Math.min(latestSleep.sleepMinutes / SLEEP_TARGET_MINUTES, 1) : 0;
@@ -175,21 +176,59 @@ export default async function HealthPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Steps trend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <WeeklyTrendChart points={trendPoints} />
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Steps</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TrendChart
+              points={stepsPoints}
+              color="var(--health-steps)"
+              unitLabel="Steps"
+              formatValue={(v) => v.toLocaleString()}
+              formatAxis={(v) => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k` : String(v))}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Sleep</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TrendChart
+              points={sleepPoints}
+              color="var(--health-sleep)"
+              unitLabel="Sleep"
+              formatValue={formatMinutes}
+              formatAxis={(v) => `${Math.round(v / 60)}h`}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Resting heart rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TrendChart
+              points={heartRatePoints}
+              color="var(--health-heart)"
+              unitLabel="Resting HR"
+              formatValue={(v) => `${v} bpm`}
+              formatAxis={(v) => String(v)}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Last {TABLE_DAYS} days</CardTitle>
+          <CardTitle>Last {DAYS} days</CardTitle>
         </CardHeader>
         <CardContent>
-          {tableRows.length === 0 ? (
+          {metrics.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Connected, but nothing has synced yet — the first sync runs within a few hours.
             </p>
@@ -205,7 +244,7 @@ export default async function HealthPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {tableRows.map((row) => (
+                  {metrics.map((row) => (
                     <tr key={row.date} className="border-b last:border-0">
                       <td className="py-2 pr-4 tabular-nums">{row.date}</td>
                       <td className="py-2 pr-4 tabular-nums">{row.steps != null ? row.steps.toLocaleString() : "—"}</td>
