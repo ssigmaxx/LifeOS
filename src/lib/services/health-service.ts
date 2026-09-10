@@ -34,3 +34,21 @@ export async function getRecentHealthMetrics(days: number): Promise<DailyHealthM
     sleepMinutes: row.sleep_minutes,
   }));
 }
+
+// Temporary diagnostic helper — surfaces the raw provider payload stored
+// alongside the most recent synced day so a parsing mismatch (right
+// request, wrong field name when reading the response) can be fixed by
+// inspecting real data instead of guessing blind. Safe to remove once the
+// step/heart-rate/sleep field mapping is confirmed correct.
+export async function getLatestRawSync(): Promise<{ date: string; raw: unknown } | null> {
+  const { supabase, userId } = await requireUserId();
+  const { data, error } = await supabase
+    .from("health_daily_metrics")
+    .select("date, raw")
+    .eq("user_id", userId)
+    .order("date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? { date: data.date, raw: data.raw } : null;
+}
