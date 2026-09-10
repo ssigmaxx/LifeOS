@@ -181,10 +181,28 @@ async function syncOneConnection(row: FitbitConnectionRow) {
     synced_at: new Date().toISOString(),
   }));
 
-  if (rows.length > 0) {
-    const { error } = await admin.from("health_daily_metrics").upsert(rows, { onConflict: "user_id,date" });
-    if (error) throw error;
-  }
+  // If nothing matched (no rollup points, no sleep points), still write a
+  // diagnostic row with the unprocessed top-level API responses — without
+  // this, an empty result is invisible: there'd be no row at all to
+  // inspect via getLatestRawSync to tell "Google returned nothing" apart
+  // from "Google returned data under a field name this code doesn't know."
+  const upsertRows =
+    rows.length > 0
+      ? rows
+      : [
+          {
+            user_id: row.user_id,
+            date: new Date().toISOString().slice(0, 10),
+            steps: null,
+            resting_heart_rate: null,
+            sleep_minutes: null,
+            raw: { stepsRollup, heartRateRollup, sleepPoints, note: "no rollup/sleep points matched any date" },
+            synced_at: new Date().toISOString(),
+          },
+        ];
+
+  const { error } = await admin.from("health_daily_metrics").upsert(upsertRows, { onConflict: "user_id,date" });
+  if (error) throw error;
 }
 
 export async function syncCurrentUserFitbit() {
