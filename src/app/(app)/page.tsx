@@ -107,7 +107,11 @@ export default async function DashboardPage({
         </p>
       ) : null}
 
-      <OnboardingFlow steps={onboardingSteps} />
+      <OnboardingFlow
+        steps={onboardingSteps}
+        needsWelcomeSetup={!profile.displayName}
+        gender={profile.gender}
+      />
 
       <Link href="/today" className="block">
         <Card className="transition-shadow hover:shadow-md">
