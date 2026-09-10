@@ -7,6 +7,7 @@ export type HealthSummary = {
   latestSteps: DailyHealthMetric | null;
   latestHeartRate: DailyHealthMetric | null;
   latestAvgHeartRate: DailyHealthMetric | null;
+  latestCalories: DailyHealthMetric | null;
   latestSleep: DailyHealthMetric | null;
   stepsPct: number;
   sleepPct: number;
@@ -28,6 +29,7 @@ export function summarizeHealthMetrics(metrics: DailyHealthMetric[]): HealthSumm
   const latestSteps = metrics.find((m) => m.steps != null) ?? null;
   const latestHeartRate = metrics.find((m) => m.restingHeartRate != null) ?? null;
   const latestAvgHeartRate = metrics.find((m) => m.avgHeartRate != null) ?? null;
+  const latestCalories = metrics.find((m) => m.caloriesBurned != null) ?? null;
   const latestSleep = metrics.find((m) => m.sleepMinutes != null) ?? null;
 
   const stepsPct = latestSteps?.steps != null ? Math.min(latestSteps.steps / STEPS_TARGET, 1) : 0;
@@ -64,6 +66,7 @@ export function summarizeHealthMetrics(metrics: DailyHealthMetric[]): HealthSumm
     latestSteps,
     latestHeartRate,
     latestAvgHeartRate,
+    latestCalories,
     latestSleep,
     stepsPct,
     sleepPct,
