@@ -2,7 +2,7 @@ import "server-only";
 import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { refreshAccessToken } from "@/lib/services/fitbit-service";
+import { FitbitReauthRequiredError, refreshAccessToken } from "@/lib/services/fitbit-service";
 
 const HEALTH_API_BASE = "https://health.googleapis.com/v4/users/me/dataTypes";
 // Re-synced on every run so a device that uploads data late (a watch that
@@ -118,7 +118,20 @@ async function syncOneConnection(row: FitbitConnectionRow) {
   // this cron only runs every 4 hours, so a token that's merely "about to
   // expire" right now would otherwise fail this entire sync.
   if (new Date(row.expires_at).getTime() < Date.now() + 2 * 60 * 1000) {
-    const refreshed = await refreshAccessToken(row.refresh_token);
+    let refreshed;
+    try {
+      refreshed = await refreshAccessToken(row.refresh_token);
+    } catch (err) {
+      // A dead refresh token (most commonly Google's 7-day forced expiry
+      // for apps still in "Testing" publishing status) isn't going to
+      // start working again on its own — flag it so Settings can prompt a
+      // reconnect instead of this failing silently on every future sync
+      // too, same as it did leading up to this one.
+      if (err instanceof FitbitReauthRequiredError) {
+        await admin.from("fitbit_connections").update({ needs_reauth: true }).eq("user_id", row.user_id);
+      }
+      throw err;
+    }
     accessToken = refreshed.access_token;
     await admin
       .from("fitbit_connections")
@@ -127,6 +140,7 @@ async function syncOneConnection(row: FitbitConnectionRow) {
         refresh_token: refreshed.refresh_token ?? row.refresh_token,
         expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
         updated_at: new Date().toISOString(),
+        needs_reauth: false,
       })
       .eq("user_id", row.user_id);
   }
@@ -290,7 +304,14 @@ export async function syncAllFitbitConnections() {
     } catch (err) {
       // Previously silent — a failed sync only ever showed up as a number
       // in this function's returned JSON, which nothing was watching.
-      Sentry.captureException(err, { tags: { area: "fitbit-sync" }, extra: { userId: row.user_id } });
+      // Still captured when it's a reauth requirement (Sentry groups it as
+      // its own distinct issue by message, so it doesn't get lost among
+      // real bugs) since it's useful to know it happened, even though the
+      // fix is "the user needs to reconnect," not a code change.
+      Sentry.captureException(err, {
+        tags: { area: "fitbit-sync", reason: err instanceof FitbitReauthRequiredError ? "needs_reauth" : "error" },
+        extra: { userId: row.user_id },
+      });
       failed += 1;
     }
   }

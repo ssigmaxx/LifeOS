@@ -12,6 +12,20 @@ async function requireUserId() {
 
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
+// Thrown specifically for invalid_grant — Google's refresh token died (most
+// commonly its own 7-day forced expiry for OAuth apps still in "Testing"
+// publishing status, but also a manually revoked grant or a changed Google
+// password). Distinguished from other refresh failures (a network blip, a
+// misconfigured client) so callers can tell "reconnect required" apart from
+// "transient, try again later" and show a message that's actually
+// actionable instead of a raw JSON error blob.
+export class FitbitReauthRequiredError extends Error {
+  constructor() {
+    super("Your Google Health connection has expired — reconnect it in Settings.");
+    this.name = "FitbitReauthRequiredError";
+  }
+}
+
 function requireGoogleHealthEnv() {
   const clientId = process.env.GOOGLE_HEALTH_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_HEALTH_CLIENT_SECRET;
@@ -75,6 +89,7 @@ export async function saveFitbitTokens(tokens: {
     scope: tokens.scope,
     expires_at: expiresAt,
     updated_at: new Date().toISOString(),
+    needs_reauth: false,
   });
   if (error) throw error;
 }
@@ -87,6 +102,23 @@ export async function isFitbitConnected(): Promise<boolean> {
     .eq("user_id", userId);
   if (error) throw error;
   return (count ?? 0) > 0;
+}
+
+export type FitbitConnectionStatus = { connected: boolean; needsReauth: boolean };
+
+// Richer than isFitbitConnected() — used where the UI needs to tell "not
+// connected" apart from "connected, but sync is silently broken until you
+// reconnect" (Settings), rather than every other page that just needs the
+// plain boolean to decide whether to show health data at all.
+export async function getFitbitConnectionStatus(): Promise<FitbitConnectionStatus> {
+  const { supabase, userId } = await requireUserId();
+  const { data, error } = await supabase
+    .from("fitbit_connections")
+    .select("needs_reauth")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return { connected: data != null, needsReauth: data?.needs_reauth ?? false };
 }
 
 export async function refreshAccessToken(refreshToken: string) {
@@ -102,7 +134,19 @@ export async function refreshAccessToken(refreshToken: string) {
     }),
   });
   if (!response.ok) {
-    throw new Error(`Google token refresh failed: ${response.status} ${await response.text()}`);
+    const text = await response.text();
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = null;
+    }
+    const googleError =
+      parsed && typeof parsed === "object" && "error" in parsed ? (parsed as { error?: unknown }).error : null;
+    if (googleError === "invalid_grant") {
+      throw new FitbitReauthRequiredError();
+    }
+    throw new Error(`Google token refresh failed: ${response.status} ${text}`);
   }
   const json = (await response.json()) as {
     access_token: string;

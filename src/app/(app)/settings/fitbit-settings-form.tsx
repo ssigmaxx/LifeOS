@@ -2,7 +2,7 @@
 
 import { useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Activity } from "lucide-react";
+import { Activity, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,15 @@ const STATUS_MESSAGES: Record<string, { message: string; variant: "success" | "e
   not_configured: { message: "Fitbit isn't configured yet on this deployment.", variant: "error" },
 };
 
-export function FitbitSettingsForm({ connected, status }: { connected: boolean; status?: string }) {
+export function FitbitSettingsForm({
+  connected,
+  needsReauth,
+  status,
+}: {
+  connected: boolean;
+  needsReauth: boolean;
+  status?: string;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -49,13 +57,25 @@ export function FitbitSettingsForm({ connected, status }: { connected: boolean; 
       <CardHeader>
         <CardTitle>Fitbit</CardTitle>
         <CardDescription>
-          {connected
-            ? "Your Fitbit/Pixel Watch account is connected via the Google Health API."
-            : "Connect a Fitbit or Pixel Watch account to bring in steps, heart rate, and sleep data."}
+          {connected && needsReauth
+            ? "Your Google Health connection expired and needs to be reconnected."
+            : connected
+              ? "Your Fitbit/Pixel Watch account is connected via the Google Health API."
+              : "Connect a Fitbit or Pixel Watch account to bring in steps, heart rate, and sleep data."}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {connected ? (
+        {connected && needsReauth ? (
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
+              <TriangleAlert className="size-4" />
+            </div>
+            <p className="flex-1 text-sm text-muted-foreground">Connection expired — sync has stopped.</p>
+            <Button size="sm" render={<a href="/api/fitbit/connect" />}>
+              Reconnect
+            </Button>
+          </div>
+        ) : connected ? (
           <div className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Activity className="size-4" />
