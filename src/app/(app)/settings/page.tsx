@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { getNotificationPreferences } from "@/lib/services/notification-service";
 import { isCycleTrackingEnabled } from "@/lib/services/cycle-service";
@@ -67,8 +68,11 @@ export default async function SettingsPage({
           <CardTitle>Help</CardTitle>
           <CardDescription>Revisit the guided tour of Meridian&apos;s features.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <ReplayTourButton />
+          <Link href="/privacy" className="block text-sm text-muted-foreground hover:text-foreground hover:underline">
+            Privacy Policy
+          </Link>
         </CardContent>
       </Card>
 
