@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -9,6 +10,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <span className="text-xl font-semibold tracking-tight">Meridian</span>
       </div>
       <div className="w-full max-w-sm">{children}</div>
+      <Link href="/privacy" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+        Privacy Policy
+      </Link>
     </div>
   );
 }
