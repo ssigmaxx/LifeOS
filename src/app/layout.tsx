@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Meridian",
   },
+  // Google Search Console domain ownership verification (HTML tag method) —
+  // alongside the HTML-file method already in public/, for redundancy.
+  verification: {
+    google: "EPdJTkKlgVWK2m0mS-3VZhnmrXHZkrc-9GGEaDUJCko",
+  },
 };
 
 export const viewport: Viewport = {
